@@ -25,7 +25,6 @@ import com.baidu.mapapi.map.MyLocationData;
 import com.baidu.mapapi.model.LatLng;
 
 public class MonitorLbs extends Activity {
-
     // 定位相关
     LocationClient mLocClient;
     public MyLocationListenner myListener = new MyLocationListenner();
@@ -38,6 +37,7 @@ public class MonitorLbs extends Activity {
     // UI相关
     OnCheckedChangeListener radioButtonListener;
     Button requestLocButton;
+    Button setLocButton;
     boolean isFirstLoc = true; // 是否首次定位
 
     @Override
@@ -45,6 +45,8 @@ public class MonitorLbs extends Activity {
         SDKInitializer.initialize(getApplicationContext());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_monitor_lbs);
+        setLocButton = (Button) findViewById(R.id.button2);
+        setLocButton.setText("放置");
         requestLocButton = (Button) findViewById(R.id.button1);
         mCurrentMode = LocationMode.NORMAL;
         requestLocButton.setText("普通");
