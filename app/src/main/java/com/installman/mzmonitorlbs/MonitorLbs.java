@@ -2,14 +2,18 @@ package com.installman.mzmonitorlbs;
 
 import android.app.Activity;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
-import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.PopupMenu;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.baidu.location.BDLocation;
 import com.baidu.location.BDLocationListener;
@@ -19,9 +23,11 @@ import com.baidu.mapapi.SDKInitializer;
 import com.baidu.mapapi.map.BaiduMap;
 import com.baidu.mapapi.map.BitmapDescriptor;
 import com.baidu.mapapi.map.BitmapDescriptorFactory;
+import com.baidu.mapapi.map.MapPoi;
 import com.baidu.mapapi.map.MapStatus;
 import com.baidu.mapapi.map.MapStatusUpdateFactory;
 import com.baidu.mapapi.map.MapView;
+import com.baidu.mapapi.map.Marker;
 import com.baidu.mapapi.map.MarkerOptions;
 import com.baidu.mapapi.map.MyLocationConfiguration;
 import com.baidu.mapapi.map.MyLocationConfiguration.LocationMode;
@@ -33,25 +39,32 @@ public class MonitorLbs extends Activity {
     // 定位相关
     LocationClient mLocClient;
     public MyLocationListenner myListener = new MyLocationListenner();
+    private BDLocation mBDLocation;
     private LocationMode mCurrentMode;
     BitmapDescriptor mCurrentMarker;
-    double mLocLat, mLocLng;
+    double dLocLat, dLocLng;
     private static final float mapZoomLevel = 19.0f;
 
     //存储相关
     DatabaseHelper mDbHelper;
     SQLiteDatabase mDatabase;
+    public enum eMonitorType{BALL, GUN, SMARK};
+    eMonitorType mMonitorType;
 
     //地图相关
     MapView mMapView;
     BaiduMap mBaiduMap;
 
     // UI相关
-    Button requestLocButton;
-    Button setLocButton;
-    Button clearLocButton;
-    Button saveLocButton;
-    TextView latlngTextView;
+    Button buttonLocMod;
+    Button buttonSetLoc;
+    PopupMenu popupMenuSetLoc;
+    Menu menuSetLoc;
+    Button buttonClearLoc;
+    Button buttonSaveLoc;
+    Button buttonRequestLoc;
+    Button buttonShowAll;
+    TextView tvLatLng;
     boolean isFirstLoc = true; // 是否首次定位
 
     public void onCreate(Bundle savedInstanceState) {
@@ -64,31 +77,30 @@ public class MonitorLbs extends Activity {
         mDatabase = mDbHelper.getWritableDatabase();
 
         //UI初始化
-        latlngTextView = (TextView) findViewById(R.id.textView);
+        tvLatLng = (TextView) findViewById(R.id.textView);
 
-        requestLocButton = (Button) findViewById(R.id.buttonMod);
+        buttonLocMod = (Button) findViewById(R.id.buttonMod);
         mCurrentMode = LocationMode.FOLLOWING;
-
-        requestLocButton.setText("跟随");
-        OnClickListener btnClickListener = new OnClickListener() {
+        buttonLocMod.setText("跟随");
+        OnClickListener btnModListener = new OnClickListener() {
             public void onClick(View v) {
                 switch (mCurrentMode) {
                     case NORMAL:
-                        requestLocButton.setText("跟随");
+                        buttonLocMod.setText("跟随");
                         mCurrentMode = LocationMode.FOLLOWING;
                         mBaiduMap
                                 .setMyLocationConfigeration(new MyLocationConfiguration(
                                         mCurrentMode, true, mCurrentMarker));
                         break;
                     case FOLLOWING:
-                        requestLocButton.setText("普通");
+                        buttonLocMod.setText("普通");
                         mCurrentMode = LocationMode.NORMAL;
                         mBaiduMap
                                 .setMyLocationConfigeration(new MyLocationConfiguration(
                                         mCurrentMode, true, mCurrentMarker));
                         break;
 /*                    case FOLLOWING:
-                        requestLocButton.setText("罗盘");
+                        buttonLocMod.setText("罗盘");
                         mCurrentMode = LocationMode.COMPASS;
                         mBaiduMap
                                 .setMyLocationConfigeration(new MyLocationConfiguration(
@@ -99,42 +111,130 @@ public class MonitorLbs extends Activity {
                 }
             }
         };
-        requestLocButton.setOnClickListener(btnClickListener);
+        buttonLocMod.setOnClickListener(btnModListener);
 
 
-        setLocButton = (Button) findViewById(R.id.buttonSet);
-        setLocButton.setText("放置");
+        buttonSetLoc = (Button) findViewById(R.id.buttonSet);
+        buttonSetLoc.setText("放置");
+
         OnClickListener btnMrkClickListener = new OnClickListener() {
             public void onClick(View v) {
-                LatLng point = new LatLng(mLocLat, mLocLng);
-                BitmapDescriptor bitmap = BitmapDescriptorFactory.fromResource(R.drawable.icon_marker);
-                addMarker(point, bitmap);
+                popupMenuSetLoc = new PopupMenu(MonitorLbs.this, findViewById(R.id.buttonSet));
+                menuSetLoc = popupMenuSetLoc.getMenu();
+                menuSetLoc.add(Menu.NONE, Menu.FIRST + 0, 0, "动球");
+                menuSetLoc.add(Menu.NONE, Menu.FIRST + 1, 1, "固枪");
+                menuSetLoc.add(Menu.NONE, Menu.FIRST + 2, 2, "智枪");
+                popupMenuSetLoc.show();
+                PopupMenu.OnMenuItemClickListener clOnMenuItemClick = new PopupMenu.OnMenuItemClickListener() {
+                    public boolean onMenuItemClick(MenuItem item) {
+                        LatLng point = new LatLng(dLocLat, dLocLng);
+                        BitmapDescriptor bitmap;
+                        switch (item.getItemId()){
+                            case Menu.FIRST + 0:
+                                mMonitorType = eMonitorType.BALL;
+                                addMarker(point, mMonitorType.ordinal());
+                                break;
+                            case Menu.FIRST + 1:
+                                mMonitorType = eMonitorType.GUN;
+                                addMarker(point, mMonitorType.ordinal());
+                                break;
+                            case Menu.FIRST + 2:
+                                mMonitorType = eMonitorType.SMARK;
+                                addMarker(point, mMonitorType.ordinal());
+                                break;
+                            default:
+                                break;
+                        }
+                        return false;
+                    }
+                };
+                popupMenuSetLoc.setOnMenuItemClickListener(clOnMenuItemClick);
             }
         };
-        setLocButton.setOnClickListener(btnMrkClickListener);
+        buttonSetLoc.setOnClickListener(btnMrkClickListener);
 
-        clearLocButton = (Button) findViewById(R.id.buttonClear);
-        clearLocButton.setText("清除");
+        buttonClearLoc = (Button) findViewById(R.id.buttonClear);
+        buttonClearLoc.setText("清除");
         OnClickListener btnClrClickListener = new OnClickListener() {
             public void onClick(View v) {
                 mBaiduMap.clear();
             }
         };
-        clearLocButton.setOnClickListener(btnClrClickListener);
+        buttonClearLoc.setOnClickListener(btnClrClickListener);
 
-        saveLocButton = (Button) findViewById(R.id.buttonSave);
-        saveLocButton.setText("保存");
-        OnClickListener btnSaveClicklistener = new OnClickListener() {
+        buttonSaveLoc = (Button) findViewById(R.id.buttonSave);
+        buttonSaveLoc.setText("保存");
+        OnClickListener btnSaveClickListener = new OnClickListener() {
             public void onClick(View v) {
-                mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude) values(?,?,?)",
-                        new Object[]{"marker", mLocLat, mLocLng});
+                mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type) " +
+                                "values(?,?,?,?)",
+                        new Object[]{"marker", dLocLat, dLocLng, mMonitorType.ordinal()});
             }
         };
-        saveLocButton.setOnClickListener(btnSaveClicklistener);
+        buttonSaveLoc.setOnClickListener(btnSaveClickListener);
+
+        buttonRequestLoc = (Button) findViewById(R.id.buttonLoc);
+        buttonRequestLoc.setText("定位");
+        OnClickListener btnLocClickListener = new OnClickListener() {
+            public void onClick(View v) {
+                mLocClient.requestLocation();
+                buttonLocMod.setText("跟随");
+                mCurrentMode = LocationMode.FOLLOWING;
+                mBaiduMap
+                        .setMyLocationConfigeration(new MyLocationConfiguration(
+                                mCurrentMode, true, mCurrentMarker));
+                mBDLocation = mLocClient.getLastKnownLocation();
+
+                dLocLat = mBDLocation.getLatitude();
+                dLocLng = mBDLocation.getLongitude();
+                tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
+            }
+        };
+        buttonRequestLoc.setOnClickListener(btnLocClickListener);
+
+        buttonShowAll = (Button) findViewById(R.id.buttonAll);
+        buttonShowAll.setText("所有");
+        OnClickListener btnAllClickListener = new OnClickListener() {
+            public void onClick(View v) {
+                mBaiduMap.clear();
+                showAllMarker();
+            }
+        };
+        buttonShowAll.setOnClickListener(btnAllClickListener);
 
         // 地图初始化
         mMapView = (MapView) findViewById(R.id.bmapView);
         mBaiduMap = mMapView.getMap();
+        BaiduMap.OnMapClickListener mapClickListener = new BaiduMap.OnMapClickListener() {
+            public void onMapClick(LatLng latLng) {
+                dLocLat = latLng.latitude;
+                dLocLng = latLng.longitude;
+                tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
+            }
+
+            public boolean onMapPoiClick(MapPoi mapPoi) {
+                return false;
+            }
+        };
+        BaiduMap.OnMarkerDragListener mrkDragListener = new BaiduMap.OnMarkerDragListener() {
+            public void onMarkerDrag(Marker marker) {
+
+            }
+
+            public void onMarkerDragEnd(Marker marker) {
+                Toast.makeText(getApplicationContext(), "drag end", Toast.LENGTH_SHORT).show();
+                dLocLat = marker.getPosition().latitude;
+                dLocLng = marker.getPosition().longitude;
+                tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
+            }
+
+            public void onMarkerDragStart(Marker marker) {
+                Toast.makeText(getApplicationContext(), "drag start", Toast.LENGTH_SHORT).show();
+            }
+        };
+        mBaiduMap.setOnMapClickListener(mapClickListener);
+        mBaiduMap.setOnMarkerDragListener(mrkDragListener);
+
         // 开启定位图层
         mBaiduMap.setMyLocationEnabled(true);
         mBaiduMap
@@ -173,10 +273,10 @@ public class MonitorLbs extends Activity {
                 MapStatus.Builder builder = new MapStatus.Builder();
                 builder.target(ll).zoom(mapZoomLevel);
                 mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+                dLocLat = location.getLatitude();
+                dLocLng = location.getLongitude();
+                tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
             }
-            mLocLat = location.getLatitude();
-            mLocLng = location.getLongitude();
-            latlngTextView.setText("lat:"+mLocLat+";lng:"+mLocLng);
         }
 
         public void onReceivePoi(BDLocation poiLocation) {
@@ -204,8 +304,42 @@ public class MonitorLbs extends Activity {
     }
 
     protected void addMarker(LatLng point, BitmapDescriptor bitmap){
-        OverlayOptions options = new MarkerOptions().icon(bitmap).title("marker").position(point);
+        OverlayOptions options = new MarkerOptions().icon(bitmap).title("mrk").position(point).draggable(true);
         mBaiduMap.addOverlay(options);
+    }
+
+    protected void addMarker(LatLng point, int monitor_type){
+        BitmapDescriptor bitmap;
+        switch(monitor_type){
+            case 0:
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball);
+                addMarker(point, bitmap);
+                break;
+            case 1:
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun);
+                addMarker(point, bitmap);
+                break;
+            case 2:
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart);
+                addMarker(point, bitmap);
+                break;
+            default:
+                break;
+        }
+    }
+
+    protected void showAllMarker(){
+        String sql = "select * from mzMonitor order by _id";
+        Cursor cu = mDatabase.rawQuery(sql, null);
+        while(cu.moveToNext()){
+            int id = cu.getInt(0);
+            String title = cu.getString(1);
+            double lat = cu.getDouble(2);
+            double lon = cu.getDouble(3);
+            int montior_type = cu.getInt(4);
+            addMarker(new LatLng(lat, lon), montior_type);
+        }
+        cu.close();
     }
 }
 
@@ -221,12 +355,15 @@ class DatabaseHelper extends SQLiteOpenHelper{
         String sql = "create table mzMonitor(" +
                 "_id INTEGER DEFAULT '1' NOT NULL PRIMARY KEY AUTOINCREMENT," +
                 "title TEXT NOT NULL," +
-                "latitude FLOAT NOT NULL," +
-                "longitude FLOAT NOT NULL" +
+                "latitude DOUBLE NOT NULL," +
+                "longitude DOUBLE NOT NULL," +
+                "monitor_type INT NOT NULL" +
                 ")";
         db.execSQL(sql);
     }
 
     public void onUpgrade(final SQLiteDatabase db, int oldV, final int newV) {
+        String sql = "drop table mzMonitor";
+        db.execSQL(sql);
     }
 }

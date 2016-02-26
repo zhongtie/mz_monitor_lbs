@@ -43,6 +43,22 @@
         android:layout_alignRight="@+id/buttonClear"
         android:layout_alignEnd="@+id/buttonClear" />
 
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonLoc"
+        android:layout_alignTop="@+id/buttonClear"
+        android:layout_alignRight="@+id/buttonMod"
+        android:layout_alignEnd="@+id/buttonMod" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/buttonAll"
+        android:layout_below="@+id/buttonLoc"
+        android:layout_alignLeft="@+id/buttonLoc"
+        android:layout_alignStart="@+id/buttonLoc" />
+
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
