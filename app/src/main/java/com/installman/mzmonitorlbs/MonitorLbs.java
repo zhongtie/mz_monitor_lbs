@@ -216,6 +216,25 @@ public class MonitorLbs extends Activity {
                 return false;
             }
         };
+        BaiduMap.OnMapStatusChangeListener mapStatusChangeListener = new BaiduMap.OnMapStatusChangeListener() {
+            public void onMapStatusChangeStart(MapStatus mapStatus) {
+
+            }
+
+            public void onMapStatusChange(MapStatus mapStatus) {
+                float zoomLvl = mapStatus.zoom;
+                if(zoomLvl >= 19.0){
+                    mBaiduMap.clear();
+                    showAllMarker();
+                }else{
+                    mBaiduMap.clear();
+                }
+            }
+
+            public void onMapStatusChangeFinish(MapStatus mapStatus) {
+
+            }
+        };
         BaiduMap.OnMarkerDragListener mrkDragListener = new BaiduMap.OnMarkerDragListener() {
             public void onMarkerDrag(Marker marker) {
 
@@ -234,6 +253,7 @@ public class MonitorLbs extends Activity {
         };
         mBaiduMap.setOnMapClickListener(mapClickListener);
         mBaiduMap.setOnMarkerDragListener(mrkDragListener);
+        mBaiduMap.setOnMapStatusChangeListener(mapStatusChangeListener);
 
         // 开启定位图层
         mBaiduMap.setMyLocationEnabled(true);
