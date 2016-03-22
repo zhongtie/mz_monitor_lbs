@@ -2,14 +2,17 @@ package com.installman.mzmonitorlbs;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -48,7 +51,7 @@ public class MonitorLbs extends Activity {
     //存储相关
     DatabaseHelper mDbHelper;
     SQLiteDatabase mDatabase;
-    public enum eMonitorType{BALL, GUN, SMARK};
+    public enum eMonitorType{BALL, GUN, SMART}
     eMonitorType mMonitorType;
 
     //地图相关
@@ -139,7 +142,7 @@ public class MonitorLbs extends Activity {
                                 addMarker(point, mMonitorType.ordinal());
                                 break;
                             case Menu.FIRST + 2:
-                                mMonitorType = eMonitorType.SMARK;
+                                mMonitorType = eMonitorType.SMART;
                                 addMarker(point, mMonitorType.ordinal());
                                 break;
                             default:
@@ -205,6 +208,8 @@ public class MonitorLbs extends Activity {
         // 地图初始化
         mMapView = (MapView) findViewById(R.id.bmapView);
         mBaiduMap = mMapView.getMap();
+
+        //自定义各种地图事件
         BaiduMap.OnMapClickListener mapClickListener = new BaiduMap.OnMapClickListener() {
             public void onMapClick(LatLng latLng) {
                 dLocLat = latLng.latitude;
@@ -251,9 +256,19 @@ public class MonitorLbs extends Activity {
                 Toast.makeText(getApplicationContext(), "drag start", Toast.LENGTH_SHORT).show();
             }
         };
+        BaiduMap.OnMarkerClickListener mrkClickListener = new BaiduMap.OnMarkerClickListener(){
+            public boolean onMarkerClick(Marker marker){
+                Log.d("mrkClick", "Title is:" + marker.getTitle());
+                Log.d("mrkClick", "Lat is:" + marker.getPosition().latitude + ";Lon is:" + marker.getPosition().longitude);
+                Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
+                startActivity(intent);
+                return true;
+            }
+        };
         mBaiduMap.setOnMapClickListener(mapClickListener);
         mBaiduMap.setOnMarkerDragListener(mrkDragListener);
         mBaiduMap.setOnMapStatusChangeListener(mapStatusChangeListener);
+        mBaiduMap.setOnMarkerClickListener(mrkClickListener);
 
         // 开启定位图层
         mBaiduMap.setMyLocationEnabled(true);
@@ -332,15 +347,15 @@ public class MonitorLbs extends Activity {
         BitmapDescriptor bitmap;
         switch(monitor_type){
             case 0:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball);
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
                 addMarker(point, bitmap);
                 break;
             case 1:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun);
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_0);
                 addMarker(point, bitmap);
                 break;
             case 2:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart);
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_0);
                 addMarker(point, bitmap);
                 break;
             default:
