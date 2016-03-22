@@ -45,6 +45,7 @@ public class MonitorLbs extends Activity {
     private BDLocation mBDLocation;
     private LocationMode mCurrentMode;
     BitmapDescriptor mCurrentMarker;
+    private String mrkTitle;
     double dLocLat, dLocLng;
     private static final float mapZoomLevel = 19.0f;
 
@@ -135,15 +136,15 @@ public class MonitorLbs extends Activity {
                         switch (item.getItemId()){
                             case Menu.FIRST + 0:
                                 mMonitorType = eMonitorType.BALL;
-                                addMarker(point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal());
                                 break;
                             case Menu.FIRST + 1:
                                 mMonitorType = eMonitorType.GUN;
-                                addMarker(point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal());
                                 break;
                             case Menu.FIRST + 2:
                                 mMonitorType = eMonitorType.SMART;
-                                addMarker(point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal());
                                 break;
                             default:
                                 break;
@@ -171,7 +172,7 @@ public class MonitorLbs extends Activity {
             public void onClick(View v) {
                 mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type) " +
                                 "values(?,?,?,?)",
-                        new Object[]{"marker", dLocLat, dLocLng, mMonitorType.ordinal()});
+                        new Object[]{mrkTitle, dLocLat, dLocLng, mMonitorType.ordinal()});
             }
         };
         buttonSaveLoc.setOnClickListener(btnSaveClickListener);
@@ -188,9 +189,12 @@ public class MonitorLbs extends Activity {
                                 mCurrentMode, true, mCurrentMarker));
                 mBDLocation = mLocClient.getLastKnownLocation();
 
+                //设置全局位置变量，方便放置
                 dLocLat = mBDLocation.getLatitude();
                 dLocLng = mBDLocation.getLongitude();
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
+                //预先设置名称
+                mrkTitle = Integer.toString(getMaxMarkerId());
             }
         };
         buttonRequestLoc.setOnClickListener(btnLocClickListener);
@@ -215,6 +219,8 @@ public class MonitorLbs extends Activity {
                 dLocLat = latLng.latitude;
                 dLocLng = latLng.longitude;
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
+                //预先设置名称
+                mrkTitle = Integer.toString(getMaxMarkerId());
             }
 
             public boolean onMapPoiClick(MapPoi mapPoi) {
@@ -338,29 +344,39 @@ public class MonitorLbs extends Activity {
         super.onDestroy();
     }
 
-    protected void addMarker(LatLng point, BitmapDescriptor bitmap){
-        OverlayOptions options = new MarkerOptions().icon(bitmap).title("mrk").position(point).draggable(true);
+    protected void addMarker(String title, LatLng point, BitmapDescriptor bitmap){
+        OverlayOptions options = new MarkerOptions().icon(bitmap).title(title).position(point).draggable(true);
         mBaiduMap.addOverlay(options);
     }
 
-    protected void addMarker(LatLng point, int monitor_type){
+    protected void addMarker(String title, LatLng point, int monitor_type){
         BitmapDescriptor bitmap;
         switch(monitor_type){
             case 0:
                 bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
-                addMarker(point, bitmap);
+                addMarker(title, point, bitmap);
                 break;
             case 1:
                 bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_0);
-                addMarker(point, bitmap);
+                addMarker(title, point, bitmap);
                 break;
             case 2:
                 bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_0);
-                addMarker(point, bitmap);
+                addMarker(title, point, bitmap);
                 break;
             default:
                 break;
         }
+    }
+
+    protected int getMaxMarkerId(){
+        String sql = "select * from mzMonitor order by _id desc limit 1";
+        Cursor cu = mDatabase.rawQuery(sql, null);
+        cu.moveToNext();
+        int id = cu.getInt(0);
+        Log.d("getMaxMarkerId", "id:"+id);
+        cu.close();
+        return id;
     }
 
     protected void showAllMarker(){
@@ -372,7 +388,7 @@ public class MonitorLbs extends Activity {
             double lat = cu.getDouble(2);
             double lon = cu.getDouble(3);
             int montior_type = cu.getInt(4);
-            addMarker(new LatLng(lat, lon), montior_type);
+            addMarker(title, new LatLng(lat, lon), montior_type);
         }
         cu.close();
     }
