@@ -54,7 +54,7 @@ public class MonitorLbs extends Activity {
     //存储相关
     protected DatabaseHelper mDbHelper;
     protected SQLiteDatabase mDatabase;
-    protected enum eMonitorType{BALL, GUN, SMART}
+    public enum eMonitorType{BALL, GUN, SMART}
     protected eMonitorType mMonitorType;
 
     //地图相关
@@ -381,7 +381,7 @@ public class MonitorLbs extends Activity {
                     case 90:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_90);
                         break;
-                    case 18:
+                    case 180:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_180);
                         break;
                     case 270:
@@ -400,7 +400,7 @@ public class MonitorLbs extends Activity {
                     case 90:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_90);
                         break;
-                    case 18:
+                    case 180:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_180);
                         break;
                     case 270:
@@ -419,7 +419,7 @@ public class MonitorLbs extends Activity {
                     case 90:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_90);
                         break;
-                    case 18:
+                    case 180:
                         bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_180);
                         break;
                     case 270:
@@ -438,11 +438,11 @@ public class MonitorLbs extends Activity {
     }
 
     protected int getMaxMarkerId(){
-        int id = 0;
+        int id = 1;
         String sql = "select * from mzMonitor order by _id desc limit 1";
         Cursor cu = mDatabase.rawQuery(sql, null);
         while(cu.moveToNext()){
-            id = cu.getInt(0);
+            id = cu.getInt(0) + 1;
         }
         cu.close();
         Log.d("getMaxMarkerId", "id:" + id);

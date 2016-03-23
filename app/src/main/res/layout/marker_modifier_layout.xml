@@ -9,31 +9,31 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:gravity="center_vertical|center_horizontal">
-
-        <Button
-            style="?android:attr/buttonStyleSmall"
+        <RadioGroup
+            android:id="@+id/radioGroupType"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_horizontal">
+        <RadioButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="动球"
-            android:id="@+id/button_modi_type_ball"
-            android:layout_gravity="center_horizontal" />
+            android:id="@+id/radioButtonBall" />
 
-        <Button
-            style="?android:attr/buttonStyleSmall"
+        <RadioButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="固枪"
-            android:id="@+id/button_modi_type_gun"
-            android:layout_gravity="center_horizontal" />
+            android:id="@+id/radioButtonGun" />
 
-        <Button
-            style="?android:attr/buttonStyleSmall"
+        <RadioButton
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="智枪"
-            android:id="@+id/button_modi_type_smart"
-            android:layout_gravity="center_horizontal" />
-        </LinearLayout>
+            android:id="@+id/radioButtonSmart" />
+        </RadioGroup>
+    </LinearLayout>
 
     <EditText
         android:layout_width="match_parent"
