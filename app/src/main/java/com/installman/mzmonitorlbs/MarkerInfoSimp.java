@@ -21,14 +21,22 @@ public class MarkerInfoSimp extends Activity {
         setContentView(R.layout.marker_info_simp_layout);
 
         Button buttonModify = (Button) findViewById(R.id.button_info_modify);
-        View.OnClickListener buttonModifyOnClickListener = new View.OnClickListener() {
+        View.OnClickListener buttonModifyListener = new View.OnClickListener() {
             public void onClick(View v) {
                 Intent intent = new Intent(MarkerInfoSimp.this, MarkerModifier.class);
                 startActivity(intent);
                 finish();
             }
         };
-        buttonModify.setOnClickListener(buttonModifyOnClickListener);
+        buttonModify.setOnClickListener(buttonModifyListener);
+
+        Button buttonCancel = (Button) findViewById(R.id.button_info_cancel);
+        View.OnClickListener buttonCancelListener = new View.OnClickListener() {
+            public void onClick(View v) {
+                finish();
+            }
+        };
+        buttonCancel.setOnClickListener(buttonCancelListener);
     }
 
     protected void onPause(){

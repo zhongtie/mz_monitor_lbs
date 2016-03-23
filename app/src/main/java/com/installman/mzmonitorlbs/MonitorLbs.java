@@ -40,20 +40,22 @@ import com.baidu.mapapi.model.LatLng;
 
 public class MonitorLbs extends Activity {
     // 定位相关
-    LocationClient mLocClient;
+    protected LocationClient mLocClient;
     public MyLocationListenner myListener = new MyLocationListenner();
-    private BDLocation mBDLocation;
-    private LocationMode mCurrentMode;
-    BitmapDescriptor mCurrentMarker;
-    private String mrkTitle;
-    double dLocLat, dLocLng;
-    private static final float mapZoomLevel = 19.0f;
+    protected BDLocation mBDLocation;
+    protected LocationMode mCurrentMode;
+    //覆盖物相关
+    protected BitmapDescriptor mCurrentMarker;
+    protected int mrkAngle = 0;//默认的覆盖物方向
+    protected String mrkTitle;
+    protected double dLocLat, dLocLng;
+    protected String strLocAddr;
 
     //存储相关
-    DatabaseHelper mDbHelper;
-    SQLiteDatabase mDatabase;
-    public enum eMonitorType{BALL, GUN, SMART}
-    eMonitorType mMonitorType;
+    protected DatabaseHelper mDbHelper;
+    protected SQLiteDatabase mDatabase;
+    protected enum eMonitorType{BALL, GUN, SMART}
+    protected eMonitorType mMonitorType;
 
     //地图相关
     MapView mMapView;
@@ -70,19 +72,26 @@ public class MonitorLbs extends Activity {
     Button buttonShowAll;
     TextView tvLatLng;
     boolean isFirstLoc = true; // 是否首次定位
+    private static final float mapZoomLevel = 19.0f;//设置初始地图点缩放等级
+    private static final float mapMarkShwoZoomlvl = 19.0f;//设置缩放等级大于多少时显示所有覆盖物
+    boolean isMarkShowAll = true; //根据zoomlvl判断是否显示所有覆盖物
 
     public void onCreate(Bundle savedInstanceState) {
         SDKInitializer.initialize(getApplicationContext());
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_monitor_lbs);
 
-        //存储
+        //后台数据库sqlite存储
         mDbHelper = new DatabaseHelper(this);
         mDatabase = mDbHelper.getWritableDatabase();
 
         //UI初始化
+        //显示GPS坐标
         tvLatLng = (TextView) findViewById(R.id.textView);
 
+        //
+
+        //地图定位模式按钮
         buttonLocMod = (Button) findViewById(R.id.buttonMod);
         mCurrentMode = LocationMode.FOLLOWING;
         buttonLocMod.setText("跟随");
@@ -117,7 +126,7 @@ public class MonitorLbs extends Activity {
         };
         buttonLocMod.setOnClickListener(btnModListener);
 
-
+        //地图上放置覆盖物按钮
         buttonSetLoc = (Button) findViewById(R.id.buttonSet);
         buttonSetLoc.setText("放置");
 
@@ -132,19 +141,18 @@ public class MonitorLbs extends Activity {
                 PopupMenu.OnMenuItemClickListener clOnMenuItemClick = new PopupMenu.OnMenuItemClickListener() {
                     public boolean onMenuItemClick(MenuItem item) {
                         LatLng point = new LatLng(dLocLat, dLocLng);
-                        BitmapDescriptor bitmap;
                         switch (item.getItemId()){
                             case Menu.FIRST + 0:
                                 mMonitorType = eMonitorType.BALL;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             case Menu.FIRST + 1:
                                 mMonitorType = eMonitorType.GUN;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             case Menu.FIRST + 2:
                                 mMonitorType = eMonitorType.SMART;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal());
+                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             default:
                                 break;
@@ -157,6 +165,7 @@ public class MonitorLbs extends Activity {
         };
         buttonSetLoc.setOnClickListener(btnMrkClickListener);
 
+        //清除所有覆盖物
         buttonClearLoc = (Button) findViewById(R.id.buttonClear);
         buttonClearLoc.setText("清除");
         OnClickListener btnClrClickListener = new OnClickListener() {
@@ -166,17 +175,19 @@ public class MonitorLbs extends Activity {
         };
         buttonClearLoc.setOnClickListener(btnClrClickListener);
 
+        //保存最后一个放置的覆盖物
         buttonSaveLoc = (Button) findViewById(R.id.buttonSave);
         buttonSaveLoc.setText("保存");
         OnClickListener btnSaveClickListener = new OnClickListener() {
             public void onClick(View v) {
-                mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type) " +
-                                "values(?,?,?,?)",
-                        new Object[]{mrkTitle, dLocLat, dLocLng, mMonitorType.ordinal()});
+                mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
+                                "values(?,?,?,?,?)",
+                        new Object[]{mrkTitle, dLocLat, dLocLng, mMonitorType.ordinal(), mrkAngle});
             }
         };
         buttonSaveLoc.setOnClickListener(btnSaveClickListener);
 
+        //定位按钮，点击后定位到当前位置
         buttonRequestLoc = (Button) findViewById(R.id.buttonLoc);
         buttonRequestLoc.setText("定位");
         OnClickListener btnLocClickListener = new OnClickListener() {
@@ -192,13 +203,15 @@ public class MonitorLbs extends Activity {
                 //设置全局位置变量，方便放置
                 dLocLat = mBDLocation.getLatitude();
                 dLocLng = mBDLocation.getLongitude();
-                tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
-                //预先设置名称
+                strLocAddr = mBDLocation.getAddrStr();
+                tvLatLng.setText(strLocAddr + ";lat:" + dLocLat + ";lng:" + dLocLng);
+                //预先设置覆盖物名称
                 mrkTitle = Integer.toString(getMaxMarkerId());
             }
         };
         buttonRequestLoc.setOnClickListener(btnLocClickListener);
 
+        //显示所有覆盖物按钮
         buttonShowAll = (Button) findViewById(R.id.buttonAll);
         buttonShowAll.setText("所有");
         OnClickListener btnAllClickListener = new OnClickListener() {
@@ -214,12 +227,13 @@ public class MonitorLbs extends Activity {
         mBaiduMap = mMapView.getMap();
 
         //自定义各种地图事件
+        //在地图上点击，获取GPS坐标及名称
         BaiduMap.OnMapClickListener mapClickListener = new BaiduMap.OnMapClickListener() {
             public void onMapClick(LatLng latLng) {
                 dLocLat = latLng.latitude;
                 dLocLng = latLng.longitude;
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
-                //预先设置名称
+                //预先设置覆盖物名称
                 mrkTitle = Integer.toString(getMaxMarkerId());
             }
 
@@ -227,6 +241,8 @@ public class MonitorLbs extends Activity {
                 return false;
             }
         };
+
+        //地图缩放后，显示或清除覆盖物
         BaiduMap.OnMapStatusChangeListener mapStatusChangeListener = new BaiduMap.OnMapStatusChangeListener() {
             public void onMapStatusChangeStart(MapStatus mapStatus) {
 
@@ -234,11 +250,13 @@ public class MonitorLbs extends Activity {
 
             public void onMapStatusChange(MapStatus mapStatus) {
                 float zoomLvl = mapStatus.zoom;
-                if(zoomLvl >= 19.0){
+                if(zoomLvl >= mapMarkShwoZoomlvl && (! isMarkShowAll)){
+                    isMarkShowAll = true;
                     mBaiduMap.clear();
                     showAllMarker();
                 }else{
                     mBaiduMap.clear();
+                    isMarkShowAll = false;
                 }
             }
 
@@ -246,6 +264,7 @@ public class MonitorLbs extends Activity {
 
             }
         };
+        //拖曳覆盖物，重新获取GPS位置
         BaiduMap.OnMarkerDragListener mrkDragListener = new BaiduMap.OnMarkerDragListener() {
             public void onMarkerDrag(Marker marker) {
 
@@ -262,11 +281,13 @@ public class MonitorLbs extends Activity {
                 Toast.makeText(getApplicationContext(), "drag start", Toast.LENGTH_SHORT).show();
             }
         };
+        //点击覆盖物，显示名称及是否进行修改
         BaiduMap.OnMarkerClickListener mrkClickListener = new BaiduMap.OnMarkerClickListener(){
             public boolean onMarkerClick(Marker marker){
                 Log.d("mrkClick", "Title is:" + marker.getTitle());
                 Log.d("mrkClick", "Lat is:" + marker.getPosition().latitude + ";Lon is:" + marker.getPosition().longitude);
                 Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
+                intent.putExtra("mrkTitle", marker.getTitle());
                 startActivity(intent);
                 return true;
             }
@@ -349,33 +370,82 @@ public class MonitorLbs extends Activity {
         mBaiduMap.addOverlay(options);
     }
 
-    protected void addMarker(String title, LatLng point, int monitor_type){
+    protected void addMarker(String title, LatLng point, int monitor_type, int monitor_angle){
         BitmapDescriptor bitmap;
         switch(monitor_type){
             case 0:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
-                addMarker(title, point, bitmap);
+                switch (monitor_angle){
+                    case 0:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
+                        break;
+                    case 90:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_90);
+                        break;
+                    case 18:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_180);
+                        break;
+                    case 270:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_270);
+                        break;
+                    default:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
+                        break;
+                }
                 break;
             case 1:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_0);
-                addMarker(title, point, bitmap);
+                switch (monitor_angle){
+                    case 0:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_0);
+                        break;
+                    case 90:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_90);
+                        break;
+                    case 18:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_180);
+                        break;
+                    case 270:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_270);
+                        break;
+                    default:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.gun_0);
+                        break;
+                }
                 break;
             case 2:
-                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_0);
-                addMarker(title, point, bitmap);
+                switch (monitor_angle){
+                    case 0:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_0);
+                        break;
+                    case 90:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_90);
+                        break;
+                    case 18:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_180);
+                        break;
+                    case 270:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_270);
+                        break;
+                    default:
+                        bitmap = BitmapDescriptorFactory.fromResource(R.drawable.smart_0);
+                        break;
+                }
                 break;
             default:
+                bitmap = BitmapDescriptorFactory.fromResource(R.drawable.ball_0);
                 break;
         }
+        addMarker(title, point, bitmap);
     }
 
     protected int getMaxMarkerId(){
+        int id = 0;
         String sql = "select * from mzMonitor order by _id desc limit 1";
         Cursor cu = mDatabase.rawQuery(sql, null);
-        cu.moveToNext();
-        int id = cu.getInt(0);
-        Log.d("getMaxMarkerId", "id:"+id);
+        while(cu.moveToNext()){
+            id = cu.getInt(0);
+        }
         cu.close();
+        Log.d("getMaxMarkerId", "id:" + id);
         return id;
     }
 
@@ -387,34 +457,10 @@ public class MonitorLbs extends Activity {
             String title = cu.getString(1);
             double lat = cu.getDouble(2);
             double lon = cu.getDouble(3);
-            int montior_type = cu.getInt(4);
-            addMarker(title, new LatLng(lat, lon), montior_type);
+            int monitor_type = cu.getInt(4);
+            int monitor_angle = cu.getInt(5);
+            addMarker(title, new LatLng(lat, lon), monitor_type, monitor_angle);
         }
         cu.close();
-    }
-}
-
-class DatabaseHelper extends SQLiteOpenHelper{
-    public static final int DB_VERSION = 1;
-    public static final String DB_NAME = "moniterLbs.db";
-
-    public DatabaseHelper(final Context context) {
-        super(context, DB_NAME, null, DB_VERSION);
-    }
-
-    public void onCreate(final SQLiteDatabase db) {
-        String sql = "create table mzMonitor(" +
-                "_id INTEGER DEFAULT '1' NOT NULL PRIMARY KEY AUTOINCREMENT," +
-                "title TEXT NOT NULL," +
-                "latitude DOUBLE NOT NULL," +
-                "longitude DOUBLE NOT NULL," +
-                "monitor_type INT NOT NULL" +
-                ")";
-        db.execSQL(sql);
-    }
-
-    public void onUpgrade(final SQLiteDatabase db, int oldV, final int newV) {
-        String sql = "drop table mzMonitor";
-        db.execSQL(sql);
     }
 }

@@ -1,17 +1,31 @@
 package com.installman.mzmonitorlbs;
 
 import android.app.Activity;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Display;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.Button;
+
+import com.baidu.mapapi.map.BitmapDescriptor;
 
 /**
  * Created by zhong on 16-3-21.
  */
 
 public class MarkerModifier extends Activity {
+    //覆盖物相关
+    protected BitmapDescriptor mCurrentMarker;
+    protected int mrkAngle = 0;//默认的覆盖物方向
+    protected String mrkTitle;
+    protected double dLocLat, dLocLng;
+    protected String strLocAddr;
+
+    DatabaseHelper mDbHelper;
+    SQLiteDatabase mDatabase;
+
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         Log.d("MarkerModifier", "Task id is " + getTaskId());
@@ -26,6 +40,13 @@ public class MarkerModifier extends Activity {
         p.alpha = 0.7f;      //设置本身透明度
         p.dimAmount = 0.0f;      //设置黑暗度
         getWindow().setAttributes(p);
+
+        //后台数据库sqlite存储
+        mDbHelper = new DatabaseHelper(this);
+        mDatabase = mDbHelper.getWritableDatabase();
+
+        Button btnModifyOk = (Button) findViewById(R.id.button_modi_ok);
+
     }
 
     protected void onPause(){
