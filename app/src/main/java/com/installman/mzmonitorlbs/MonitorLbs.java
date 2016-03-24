@@ -45,17 +45,17 @@ public class MonitorLbs extends Activity {
     protected BDLocation mBDLocation;
     protected LocationMode mCurrentMode;
     //覆盖物相关
+    MzMonitor mzMonitor;
     protected BitmapDescriptor mCurrentMarker;
     protected int mrkAngle = 0;//默认的覆盖物方向
     protected String mrkTitle;
     protected double dLocLat, dLocLng;
     protected String strLocAddr;
+    protected MzMonitor.eMonitorType mMonitorType;
 
     //存储相关
     protected DatabaseHelper mDbHelper;
     protected SQLiteDatabase mDatabase;
-    public enum eMonitorType{BALL, GUN, SMART}
-    protected eMonitorType mMonitorType;
 
     //地图相关
     MapView mMapView;
@@ -73,7 +73,7 @@ public class MonitorLbs extends Activity {
     TextView tvLatLng;
     boolean isFirstLoc = true; // 是否首次定位
     private static final float mapZoomLevel = 19.0f;//设置初始地图点缩放等级
-    private static final float mapMarkShwoZoomlvl = 19.0f;//设置缩放等级大于多少时显示所有覆盖物
+    private static final float mapMarkShwoZoomlvl = 15.0f;//设置缩放等级大于多少时显示所有覆盖物
     boolean isMarkShowAll = true; //根据zoomlvl判断是否显示所有覆盖物
 
     public void onCreate(Bundle savedInstanceState) {
@@ -88,8 +88,6 @@ public class MonitorLbs extends Activity {
         //UI初始化
         //显示GPS坐标
         tvLatLng = (TextView) findViewById(R.id.textView);
-
-        //
 
         //地图定位模式按钮
         buttonLocMod = (Button) findViewById(R.id.buttonMod);
@@ -143,15 +141,15 @@ public class MonitorLbs extends Activity {
                         LatLng point = new LatLng(dLocLat, dLocLng);
                         switch (item.getItemId()){
                             case Menu.FIRST + 0:
-                                mMonitorType = eMonitorType.BALL;
+                                mMonitorType = MzMonitor.eMonitorType.BALL;
                                 addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             case Menu.FIRST + 1:
-                                mMonitorType = eMonitorType.GUN;
+                                mMonitorType = MzMonitor.eMonitorType.GUN;
                                 addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             case Menu.FIRST + 2:
-                                mMonitorType = eMonitorType.SMART;
+                                mMonitorType = MzMonitor.eMonitorType.SMART;
                                 addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
                                 break;
                             default:
@@ -180,6 +178,7 @@ public class MonitorLbs extends Activity {
         buttonSaveLoc.setText("保存");
         OnClickListener btnSaveClickListener = new OnClickListener() {
             public void onClick(View v) {
+                mrkTitle = Integer.toString(getMaxMarkerId());
                 mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
                                 "values(?,?,?,?,?)",
                         new Object[]{mrkTitle, dLocLat, dLocLng, mMonitorType.ordinal(), mrkAngle});
@@ -250,13 +249,12 @@ public class MonitorLbs extends Activity {
 
             public void onMapStatusChange(MapStatus mapStatus) {
                 float zoomLvl = mapStatus.zoom;
-                if(zoomLvl >= mapMarkShwoZoomlvl && (! isMarkShowAll)){
-                    isMarkShowAll = true;
+                if(zoomLvl <= mapMarkShwoZoomlvl){
                     mBaiduMap.clear();
-                    showAllMarker();
+                    //showAllMarker();
                 }else{
-                    mBaiduMap.clear();
-                    isMarkShowAll = false;
+                    //mBaiduMap.clear();
+                    //isMarkShowAll = false;
                 }
             }
 

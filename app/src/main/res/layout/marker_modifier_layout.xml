@@ -42,13 +42,43 @@
         android:layout_gravity="center_horizontal"
         android:text="名称" />
 
-    <Button
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="右转90度"
-        android:id="@+id/button_modi_angl"
-        android:layout_gravity="center_horizontal" />
+        android:layout_gravity="center_vertical"
+        android:gravity="center_vertical|center_horizontal">
+        <RadioGroup
+            android:id="@+id/radioGroupAngle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:gravity="center_horizontal">
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="向上"
+                android:id="@+id/radioButtonUp" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="向右"
+                android:id="@+id/radioButtonRight" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="向下"
+                android:id="@+id/radioButtonDown" />
+
+            <RadioButton
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="向左"
+                android:id="@+id/radioButtonLeft" />
+        </RadioGroup>
+    </LinearLayout>
 
     <LinearLayout
         android:orientation="horizontal"

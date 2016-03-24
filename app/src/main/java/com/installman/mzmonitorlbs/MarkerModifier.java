@@ -23,18 +23,17 @@ public class MarkerModifier extends Activity {
     //覆盖物相关
     protected BitmapDescriptor mCurrentMarker;
     protected int mrkAngle = 0;//默认的覆盖物方向
-    protected int angleInc = 90;//角度每次增加幅度
     protected String mrkTitle, oldMrkTitle;
-    protected MonitorLbs.eMonitorType mMonitorType;
+    protected MzMonitor.eMonitorType mMonitorType;
 
     //数据库存储相关
     DatabaseHelper mDbHelper;
     SQLiteDatabase mDatabase;
 
     //UI相关
-    RadioGroup mRadioGroup;
+    RadioGroup mRadioGroupType, mRadioGroupAngle;
     EditText mEditText;
-    Button mButtonAngle, mButtonOk, mButtonCancel;
+    Button mButtonOk, mButtonCancel;
 
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -56,35 +55,57 @@ public class MarkerModifier extends Activity {
         oldMrkTitle = intentGet.getStringExtra("mrkTitle");
 
         //设置类型
-        mRadioGroup = (RadioGroup) findViewById(R.id.radioGroupType);
+        mRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
+        mRadioGroupType.check(R.id.radioButtonBall);
         RadioGroup.OnCheckedChangeListener radioGroupCheckListener = new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                if(checkedId == R.id.radioButtonBall){
-                    mMonitorType = MonitorLbs.eMonitorType.BALL;
-                }else if(checkedId == R.id.radioButtonGun){
-                    mMonitorType = MonitorLbs.eMonitorType.GUN;
-                }else if(checkedId == R.id.radioButtonSmart){
-                    mMonitorType = MonitorLbs.eMonitorType.SMART;
-                }else{
-                    mMonitorType = MonitorLbs.eMonitorType.BALL;
+                switch (checkedId){
+                    case R.id.radioButtonBall:
+                        mMonitorType = MzMonitor.eMonitorType.BALL;
+                        break;
+                    case R.id.radioButtonGun:
+                        mMonitorType = MzMonitor.eMonitorType.GUN;
+                        break;
+                    case R.id.radioButtonSmart:
+                        mMonitorType = MzMonitor.eMonitorType.SMART;
+                        break;
+                    default:
+                        mMonitorType = MzMonitor.eMonitorType.BALL;
+                        break;
                 }
             }
         };
-        mRadioGroup.setOnCheckedChangeListener(radioGroupCheckListener);
+        mRadioGroupType.setOnCheckedChangeListener(radioGroupCheckListener);
 
         //设置名称
         mEditText = (EditText) findViewById(R.id.editText_modi_name);
         mEditText.setText(oldMrkTitle);
 
         //设置角度，初始角度都是0
-        mButtonAngle = (Button) findViewById(R.id.button_modi_angl);
-        View.OnClickListener angleClickListener = new View.OnClickListener() {
-            public void onClick(View v) {
-                //每点击一次角度增加
-                mrkAngle = (mrkAngle + angleInc) % 360;
+        mRadioGroupAngle = (RadioGroup) findViewById(R.id.radioGroupAngle);
+        mRadioGroupAngle.check(R.id.radioButtonUp);
+        RadioGroup.OnCheckedChangeListener angleChangeListener = new RadioGroup.OnCheckedChangeListener() {
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                switch (checkedId){
+                    case R.id.radioButtonUp:
+                        mrkAngle = 0;
+                        break;
+                    case R.id.radioButtonRight:
+                        mrkAngle = 90;
+                        break;
+                    case R.id.radioButtonDown:
+                        mrkAngle = 180;
+                        break;
+                    case R.id.radioButtonLeft:
+                        mrkAngle = 270;
+                        break;
+                    default:
+                        mrkAngle = 0;
+                        break;
+                }
             }
         };
-        mButtonAngle.setOnClickListener(angleClickListener);
+        mRadioGroupAngle.setOnCheckedChangeListener(angleChangeListener);
 
         //确认修改
         //后台数据库sqlite存储
