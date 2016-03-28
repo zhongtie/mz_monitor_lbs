@@ -23,15 +23,9 @@ public class MarkerModifier extends Activity {
     //覆盖物相关
     protected int gMrkAngle = 0;//默认的覆盖物方向
     protected String gNewMrkTitle, gOldMrkTitle, gAction;
-    protected MzMonitor.eMonitorType gMonitorType;
+    protected MzMonitor.eMonitorType gMonitorType = MzMonitor.eMonitorType.BALL;
 
     double gLocLat, gLocLng;
-    protected final String EXTRA_ACTION = "ACTION";
-    protected final String EXTRA_ACTION_ADD = "ADD";
-    protected final String EXTRA_ACTION_MODIFY = "MODIFY";
-    protected final String EXTRA_TITLE = "MRK_TITLE";
-    protected final String EXTRA_LATITUDE = "MRK_LATITUDE";
-    protected final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
 
     //数据库存储相关
     DatabaseHelper gDbHelper;
@@ -60,10 +54,14 @@ public class MarkerModifier extends Activity {
         //获取activity传过来的参数
         Intent i = getIntent();
 
-        gAction = i.getStringExtra(EXTRA_ACTION);
-        gOldMrkTitle = i.getStringExtra(EXTRA_TITLE);
-        gLocLat = i.getDoubleExtra(EXTRA_LATITUDE, 0.0);
-        gLocLng = i.getDoubleExtra(EXTRA_LONGTITUDE, 0.0);
+        gAction = i.getStringExtra(MonitorLbs.EXTRA_ACTION);
+        gOldMrkTitle = i.getStringExtra(MonitorLbs.EXTRA_TITLE);
+        gLocLat = i.getDoubleExtra(MonitorLbs.EXTRA_LATITUDE, 0.0);
+        gLocLng = i.getDoubleExtra(MonitorLbs.EXTRA_LONGTITUDE, 0.0);
+
+        //设置名称
+        gEtMrkTitle = (EditText) findViewById(R.id.editText_modi_name);
+        gEtMrkTitle.setText(gOldMrkTitle);
 
         //设置类型
         gRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
@@ -87,10 +85,6 @@ public class MarkerModifier extends Activity {
             }
         };
         gRadioGroupType.setOnCheckedChangeListener(rgCheck);
-
-        //设置名称
-        gEtMrkTitle = (EditText) findViewById(R.id.editText_modi_name);
-        gEtMrkTitle.setText(gOldMrkTitle);
 
         //设置角度，初始角度都是0
         gRadioGroupAngle = (RadioGroup) findViewById(R.id.radioGroupAngle);
@@ -126,26 +120,28 @@ public class MarkerModifier extends Activity {
         gBtnOk = (Button) findViewById(R.id.button_modi_ok);
         View.OnClickListener btnOkClick = new View.OnClickListener() {
             public void onClick(View v) {
+                //显示相关参数
                 gNewMrkTitle = gEtMrkTitle.getText().toString();
+                Log.d("Modify", gAction + gNewMrkTitle + gMonitorType.ordinal() + gMrkAngle + gLocLat + gLocLng);
+
                 if(isMrkTitleUnique(gNewMrkTitle)) {
-                    switch (gAction) {
-                        case EXTRA_ACTION_MODIFY:
-                            gNewMrkTitle = gEtMrkTitle.getText().toString();
-                            gDatabase.execSQL("update mzMonitor" +
-                                            " set title = ?," +
-                                            " monitor_type = ?," +
-                                            " monitor_angle = ?," +
-                                            " latitude = ?," +
-                                            " longitude = ?" +
-                                            " where title = ?",
-                                    new Object[]{gNewMrkTitle,
-                                            gMonitorType.ordinal(),
-                                            gMrkAngle,
-                                            gLocLat,
-                                            gLocLng,
-                                            gOldMrkTitle});
-                            finish();
-                        case EXTRA_ACTION_ADD:
+                    if(MonitorLbs.EXTRA_ACTION_MODIFY.equals(gAction)) {
+                        gNewMrkTitle = gEtMrkTitle.getText().toString();
+                        gDatabase.execSQL("update mzMonitor" +
+                                        " set title = ?," +
+                                        " monitor_type = ?," +
+                                        " monitor_angle = ?," +
+                                        " latitude = ?," +
+                                        " longitude = ?" +
+                                        " where title = ?",
+                                new Object[]{gNewMrkTitle,
+                                        gMonitorType.ordinal(),
+                                        gMrkAngle,
+                                        gLocLat,
+                                        gLocLng,
+                                        gOldMrkTitle});
+                    }
+                    else if(MonitorLbs.EXTRA_ACTION_ADD.equals(gAction)){
                             gDatabase.execSQL("insert into mzMonitor(" +
                                             " title," +
                                             " latitude," +
@@ -158,11 +154,11 @@ public class MarkerModifier extends Activity {
                                             gLocLng,
                                             gMonitorType.ordinal(),
                                             gMrkAngle});
-                            finish();
                     }
+                    finish();
                 }
                 else{
-                    Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT);
+                    Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
                 }
             }
         };

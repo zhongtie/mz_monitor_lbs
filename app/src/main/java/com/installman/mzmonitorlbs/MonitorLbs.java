@@ -49,12 +49,14 @@ public class MonitorLbs extends Activity {
     protected double dLocLat, dLocLng;
     protected String strLocAddr;
     protected MzMonitor.eMonitorType gMonitorType;
-    protected final String EXTRA_ACTION = "ACTION";
-    protected final String EXTRA_ACTION_ADD = "ADD";
-    protected final String EXTRA_ACTION_MODIFY = "MODIFY";
-    protected final String EXTRA_TITLE = "MRK_TITLE";
-    protected final String EXTRA_LATITUDE = "MRK_LATITUDE";
-    protected final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
+    public static final String EXTRA_ACTION = "ACTION";
+    public static final String EXTRA_ACTION_ADD = "ADD";
+    public static final String EXTRA_ACTION_MODIFY = "MODIFY";
+    public static final String EXTRA_TITLE = "MRK_TITLE";
+    public static final String EXTRA_TYPE = "MRK_TYPE";
+    public static final String EXTRA_ANGLE = "MRK_ANGLE";
+    public static final String EXTRA_LATITUDE = "MRK_LATITUDE";
+    public static final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
 
     //存储相关
     protected DatabaseHelper gDbHelper;
@@ -127,10 +129,11 @@ public class MonitorLbs extends Activity {
                 Intent i = new Intent(MonitorLbs.this, MarkerModifier.class);
                 i.putExtra(EXTRA_ACTION, EXTRA_ACTION_ADD);
                 i.putExtra(EXTRA_TITLE, "梅江区");
+                i.putExtra(EXTRA_ANGLE, 0);
+                i.putExtra(EXTRA_TYPE, MzMonitor.eMonitorType.BALL.ordinal());
                 i.putExtra(EXTRA_LATITUDE, dLocLat);
                 i.putExtra(EXTRA_LONGTITUDE, dLocLng);
                 startActivity(i);
-                finish();
                 /*
                 popupMenuSetLoc = new PopupMenu(MonitorLbs.this, findViewById(R.id.buttonSet));
                 menuSetLoc = popupMenuSetLoc.getMenu();
@@ -176,11 +179,13 @@ public class MonitorLbs extends Activity {
         };
         buttonClearLoc.setOnClickListener(btnClrClick);
 
-        //保存最后一个放置的覆盖物
+        //
         buttonSaveLoc = (Button) findViewById(R.id.buttonSave);
-        buttonSaveLoc.setText("保存");
+        buttonSaveLoc.setText("刷新");
         OnClickListener btnSaveClick = new OnClickListener() {
             public void onClick(View v) {
+                gBaiduMap.clear();
+                showAllMarker();
                 /*
                 gMrkTitle = Integer.toString(getMaxMarkerId());
                 gDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
@@ -209,8 +214,6 @@ public class MonitorLbs extends Activity {
                 dLocLng = gBDLocation.getLongitude();
                 strLocAddr = gBDLocation.getAddrStr();
                 tvLatLng.setText(strLocAddr + ";lat:" + dLocLat + ";lng:" + dLocLng);
-                //预先设置覆盖物名称
-                gMrkTitle = Integer.toString(getMaxMarkerId());
             }
         };
         buttonRequestLoc.setOnClickListener(btnLocClick);
@@ -237,8 +240,6 @@ public class MonitorLbs extends Activity {
                 dLocLat = latLng.latitude;
                 dLocLng = latLng.longitude;
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
-                //预先设置覆盖物名称
-                gMrkTitle = Integer.toString(getMaxMarkerId());
             }
 
             public boolean onMapPoiClick(MapPoi mapPoi) {
@@ -286,9 +287,15 @@ public class MonitorLbs extends Activity {
             public boolean onMarkerClick(Marker marker){
                 Log.d("mrkClick", "Title is:" + marker.getTitle());
                 Log.d("mrkClick", "Lat is:" + marker.getPosition().latitude + ";Lon is:" + marker.getPosition().longitude);
+
+                MzMonitor m = getMrkByTitle(marker.getTitle());
+
                 Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
                 intent.putExtra(EXTRA_ACTION, EXTRA_ACTION_MODIFY);
-                intent.putExtra(EXTRA_TITLE, marker.getTitle());
+                intent.putExtra(EXTRA_TITLE, m.getMrkTitle());
+                intent.putExtra(EXTRA_ANGLE, m.getMrkAngle());
+                intent.putExtra(EXTRA_TYPE, m.getMonitorType().ordinal());
+                //如果有移动，需要使用移动后的位置
                 intent.putExtra(EXTRA_LATITUDE, marker.getPosition().latitude);
                 intent.putExtra(EXTRA_LONGTITUDE, marker.getPosition().longitude);
                 startActivity(intent);
@@ -450,6 +457,39 @@ public class MonitorLbs extends Activity {
         cu.close();
         Log.d("getMaxMarkerId", "id:" + id);
         return id;
+    }
+
+    protected MzMonitor getMrkByTitle(String title){
+        MzMonitor m = new MzMonitor();
+        String sql = "select * from mzMonitor where title = '" + title + "' limit 1";
+        Cursor cu = gDatabase.rawQuery(sql, null);
+        while (cu.moveToNext()){
+            int id = cu.getInt(0);
+            String tle = cu.getString(1);
+            m.setMrkTitle(tle);
+            double lat = cu.getDouble(2);
+            m.setLocLatitude(lat);
+            double lon = cu.getDouble(3);
+            m.setLocLngitude(lon);
+            int monitor_type = cu.getInt(4);
+            switch (monitor_type){
+                case 0:
+                    m.setMonitorType(MzMonitor.eMonitorType.BALL);
+                    break;
+                case 1:
+                    m.setMonitorType(MzMonitor.eMonitorType.GUN);
+                    break;
+                case 2:
+                    m.setMonitorType(MzMonitor.eMonitorType.SMART);
+                    break;
+                default:
+                    m.setMonitorType(MzMonitor.eMonitorType.BALL);
+                    break;
+            }
+            int monitor_angle = cu.getInt(5);
+            m.setMrkAngle(monitor_angle);
+        }
+        return m;
     }
 
     protected void showAllMarker(){
