@@ -7,64 +7,64 @@ import java.io.Serializable;
  */
 public class MzMonitor implements Serializable{
     public enum eMonitorType{BALL, GUN, SMART}
-    protected eMonitorType mMonitorType;//监控头类型
-    protected int mrkAngle;//监控头方向
-    protected String mrkTitle;//监控头名称
-    protected double dLocLat, dLocLng;//监控头所在位置
+    protected eMonitorType gMonitorType;//监控头类型
+    protected int gMrkAngle;//监控头方向
+    protected String gMrkTitle;//监控头名称
+    protected double gLocLatitude, gLocLngitude;//监控头所在位置
 
     public void MzMonitor(){
-        mMonitorType = eMonitorType.BALL;
-        mrkAngle = 0;
-        mrkTitle = "广东省梅州市梅江区";
-        dLocLat = 116.129435;
-        dLocLng = 24.2941424;
+        gMonitorType = eMonitorType.BALL;
+        gMrkAngle = 0;
+        gMrkTitle = "广东省梅州市梅江区";
+        gLocLatitude = 116.129435;
+        gLocLngitude = 24.2941424;
     }
 
     public void MzMonitor(eMonitorType monitorType, int angle, String title, double latitude, double longitude){
-        mMonitorType = monitorType;
-        mrkAngle = angle;
-        mrkTitle = title;
-        dLocLat = latitude;
-        dLocLng = longitude;
+        gMonitorType = monitorType;
+        gMrkAngle = angle;
+        gMrkTitle = title;
+        gLocLatitude = latitude;
+        gLocLngitude = longitude;
     }
 
-    public eMonitorType getmMonitorType() {
-        return mMonitorType;
+    public eMonitorType getMonitorType() {
+        return gMonitorType;
     }
 
-    public void setmMonitorType(eMonitorType mMonitorType) {
-        this.mMonitorType = mMonitorType;
+    public void setMonitorType(eMonitorType gMonitorType) {
+        this.gMonitorType = gMonitorType;
     }
 
     public int getMrkAngle() {
-        return mrkAngle;
+        return gMrkAngle;
     }
 
-    public void setMrkAngle(int mrkAngle) {
-        this.mrkAngle = mrkAngle;
+    public void setMrkAngle(int gMrkAngle) {
+        this.gMrkAngle = gMrkAngle;
     }
 
     public String getMrkTitle() {
-        return mrkTitle;
+        return gMrkTitle;
     }
 
-    public void setMrkTitle(String mrkTitle) {
-        this.mrkTitle = mrkTitle;
+    public void setMrkTitle(String gMrkTitle) {
+        this.gMrkTitle = gMrkTitle;
     }
 
-    public double getdLocLat() {
-        return dLocLat;
+    public double getLocLatitude() {
+        return gLocLatitude;
     }
 
-    public void setdLocLat(double dLocLat) {
-        this.dLocLat = dLocLat;
+    public void setLocLatitude(double gLocLatitude) {
+        this.gLocLatitude = gLocLatitude;
     }
 
-    public double getdLocLng() {
-        return dLocLng;
+    public double getLocLngitude() {
+        return gLocLngitude;
     }
 
-    public void setdLocLng(double dLocLng) {
-        this.dLocLng = dLocLng;
+    public void setLocLngitude(double gLocLngitude) {
+        this.gLocLngitude = gLocLngitude;
     }
 }

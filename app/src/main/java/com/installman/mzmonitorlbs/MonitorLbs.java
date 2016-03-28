@@ -1,18 +1,15 @@
 package com.installman.mzmonitorlbs;
 
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.PopupMenu;
 import android.widget.TextView;
@@ -40,26 +37,26 @@ import com.baidu.mapapi.model.LatLng;
 
 public class MonitorLbs extends Activity {
     // 定位相关
-    protected LocationClient mLocClient;
-    public MyLocationListenner myListener = new MyLocationListenner();
-    protected BDLocation mBDLocation;
-    protected LocationMode mCurrentMode;
+    protected LocationClient gLocClient;
+    public MyLocationListenner gMyLocListener = new MyLocationListenner();
+    protected BDLocation gBDLocation;
+    protected LocationMode gCurrentMode;
     //覆盖物相关
-    MzMonitor mzMonitor;
-    protected BitmapDescriptor mCurrentMarker;
-    protected int mrkAngle = 0;//默认的覆盖物方向
-    protected String mrkTitle;
+    MzMonitor gMonitor;
+    protected BitmapDescriptor gMrkBitmapDesc;
+    protected int gMrkAngle = 0;//默认的覆盖物方向
+    protected String gMrkTitle;
     protected double dLocLat, dLocLng;
     protected String strLocAddr;
-    protected MzMonitor.eMonitorType mMonitorType;
+    protected MzMonitor.eMonitorType gMonitorType;
 
     //存储相关
-    protected DatabaseHelper mDbHelper;
-    protected SQLiteDatabase mDatabase;
+    protected DatabaseHelper gDbHelper;
+    protected SQLiteDatabase gDatabase;
 
     //地图相关
-    MapView mMapView;
-    BaiduMap mBaiduMap;
+    MapView gMapView;
+    BaiduMap gBaiduMap;
 
     // UI相关
     Button buttonLocMod;
@@ -82,8 +79,8 @@ public class MonitorLbs extends Activity {
         setContentView(R.layout.activity_monitor_lbs);
 
         //后台数据库sqlite存储
-        mDbHelper = new DatabaseHelper(this);
-        mDatabase = mDbHelper.getWritableDatabase();
+        gDbHelper = new DatabaseHelper(this);
+        gDatabase = gDbHelper.getWritableDatabase();
 
         //UI初始化
         //显示GPS坐标
@@ -91,44 +88,37 @@ public class MonitorLbs extends Activity {
 
         //地图定位模式按钮
         buttonLocMod = (Button) findViewById(R.id.buttonMod);
-        mCurrentMode = LocationMode.FOLLOWING;
+        gCurrentMode = LocationMode.FOLLOWING;
         buttonLocMod.setText("跟随");
-        OnClickListener btnModListener = new OnClickListener() {
+        OnClickListener btnModClick = new OnClickListener() {
             public void onClick(View v) {
-                switch (mCurrentMode) {
+                switch (gCurrentMode) {
                     case NORMAL:
                         buttonLocMod.setText("跟随");
-                        mCurrentMode = LocationMode.FOLLOWING;
-                        mBaiduMap
+                        gCurrentMode = LocationMode.FOLLOWING;
+                        gBaiduMap
                                 .setMyLocationConfigeration(new MyLocationConfiguration(
-                                        mCurrentMode, true, mCurrentMarker));
+                                        gCurrentMode, true, gMrkBitmapDesc));
                         break;
                     case FOLLOWING:
                         buttonLocMod.setText("普通");
-                        mCurrentMode = LocationMode.NORMAL;
-                        mBaiduMap
+                        gCurrentMode = LocationMode.NORMAL;
+                        gBaiduMap
                                 .setMyLocationConfigeration(new MyLocationConfiguration(
-                                        mCurrentMode, true, mCurrentMarker));
+                                        gCurrentMode, true, gMrkBitmapDesc));
                         break;
-/*                    case FOLLOWING:
-                        buttonLocMod.setText("罗盘");
-                        mCurrentMode = LocationMode.COMPASS;
-                        mBaiduMap
-                                .setMyLocationConfigeration(new MyLocationConfiguration(
-                                        mCurrentMode, true, mCurrentMarker));
-                        break;*/
                     default:
                         break;
                 }
             }
         };
-        buttonLocMod.setOnClickListener(btnModListener);
+        buttonLocMod.setOnClickListener(btnModClick);
 
         //地图上放置覆盖物按钮
         buttonSetLoc = (Button) findViewById(R.id.buttonSet);
         buttonSetLoc.setText("放置");
 
-        OnClickListener btnMrkClickListener = new OnClickListener() {
+        OnClickListener btnMrkClick = new OnClickListener() {
             public void onClick(View v) {
                 popupMenuSetLoc = new PopupMenu(MonitorLbs.this, findViewById(R.id.buttonSet));
                 menuSetLoc = popupMenuSetLoc.getMenu();
@@ -141,16 +131,16 @@ public class MonitorLbs extends Activity {
                         LatLng point = new LatLng(dLocLat, dLocLng);
                         switch (item.getItemId()){
                             case Menu.FIRST + 0:
-                                mMonitorType = MzMonitor.eMonitorType.BALL;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
+                                gMonitorType = MzMonitor.eMonitorType.BALL;
+                                addMarker(gMrkTitle, point, gMonitorType.ordinal(), gMrkAngle);
                                 break;
                             case Menu.FIRST + 1:
-                                mMonitorType = MzMonitor.eMonitorType.GUN;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
+                                gMonitorType = MzMonitor.eMonitorType.GUN;
+                                addMarker(gMrkTitle, point, gMonitorType.ordinal(), gMrkAngle);
                                 break;
                             case Menu.FIRST + 2:
-                                mMonitorType = MzMonitor.eMonitorType.SMART;
-                                addMarker(mrkTitle, point, mMonitorType.ordinal(), mrkAngle);
+                                gMonitorType = MzMonitor.eMonitorType.SMART;
+                                addMarker(gMrkTitle, point, gMonitorType.ordinal(), gMrkAngle);
                                 break;
                             default:
                                 break;
@@ -161,79 +151,79 @@ public class MonitorLbs extends Activity {
                 popupMenuSetLoc.setOnMenuItemClickListener(clOnMenuItemClick);
             }
         };
-        buttonSetLoc.setOnClickListener(btnMrkClickListener);
+        buttonSetLoc.setOnClickListener(btnMrkClick);
 
         //清除所有覆盖物
         buttonClearLoc = (Button) findViewById(R.id.buttonClear);
         buttonClearLoc.setText("清除");
-        OnClickListener btnClrClickListener = new OnClickListener() {
+        OnClickListener btnClrClick = new OnClickListener() {
             public void onClick(View v) {
-                mBaiduMap.clear();
+                gBaiduMap.clear();
             }
         };
-        buttonClearLoc.setOnClickListener(btnClrClickListener);
+        buttonClearLoc.setOnClickListener(btnClrClick);
 
         //保存最后一个放置的覆盖物
         buttonSaveLoc = (Button) findViewById(R.id.buttonSave);
         buttonSaveLoc.setText("保存");
-        OnClickListener btnSaveClickListener = new OnClickListener() {
+        OnClickListener btnSaveClick = new OnClickListener() {
             public void onClick(View v) {
-                mrkTitle = Integer.toString(getMaxMarkerId());
-                mDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
+                gMrkTitle = Integer.toString(getMaxMarkerId());
+                gDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
                                 "values(?,?,?,?,?)",
-                        new Object[]{mrkTitle, dLocLat, dLocLng, mMonitorType.ordinal(), mrkAngle});
+                        new Object[]{gMrkTitle, dLocLat, dLocLng, gMonitorType.ordinal(), gMrkAngle});
             }
         };
-        buttonSaveLoc.setOnClickListener(btnSaveClickListener);
+        buttonSaveLoc.setOnClickListener(btnSaveClick);
 
         //定位按钮，点击后定位到当前位置
         buttonRequestLoc = (Button) findViewById(R.id.buttonLoc);
         buttonRequestLoc.setText("定位");
-        OnClickListener btnLocClickListener = new OnClickListener() {
+        OnClickListener btnLocClick = new OnClickListener() {
             public void onClick(View v) {
-                mLocClient.requestLocation();
+                gLocClient.requestLocation();
                 buttonLocMod.setText("跟随");
-                mCurrentMode = LocationMode.FOLLOWING;
-                mBaiduMap
+                gCurrentMode = LocationMode.FOLLOWING;
+                gBaiduMap
                         .setMyLocationConfigeration(new MyLocationConfiguration(
-                                mCurrentMode, true, mCurrentMarker));
-                mBDLocation = mLocClient.getLastKnownLocation();
+                                gCurrentMode, true, gMrkBitmapDesc));
+                gBDLocation = gLocClient.getLastKnownLocation();
 
                 //设置全局位置变量，方便放置
-                dLocLat = mBDLocation.getLatitude();
-                dLocLng = mBDLocation.getLongitude();
-                strLocAddr = mBDLocation.getAddrStr();
+                dLocLat = gBDLocation.getLatitude();
+                dLocLng = gBDLocation.getLongitude();
+                strLocAddr = gBDLocation.getAddrStr();
                 tvLatLng.setText(strLocAddr + ";lat:" + dLocLat + ";lng:" + dLocLng);
                 //预先设置覆盖物名称
-                mrkTitle = Integer.toString(getMaxMarkerId());
+                gMrkTitle = Integer.toString(getMaxMarkerId());
             }
         };
-        buttonRequestLoc.setOnClickListener(btnLocClickListener);
+        buttonRequestLoc.setOnClickListener(btnLocClick);
 
         //显示所有覆盖物按钮
         buttonShowAll = (Button) findViewById(R.id.buttonAll);
         buttonShowAll.setText("所有");
-        OnClickListener btnAllClickListener = new OnClickListener() {
+        OnClickListener btnAllClick = new OnClickListener() {
             public void onClick(View v) {
-                mBaiduMap.clear();
+                gBaiduMap.clear();
                 showAllMarker();
             }
         };
-        buttonShowAll.setOnClickListener(btnAllClickListener);
+        buttonShowAll.setOnClickListener(btnAllClick);
 
         // 地图初始化
-        mMapView = (MapView) findViewById(R.id.bmapView);
-        mBaiduMap = mMapView.getMap();
+        gMapView = (MapView) findViewById(R.id.bmapView);
+        gBaiduMap = gMapView.getMap();
 
         //自定义各种地图事件
         //在地图上点击，获取GPS坐标及名称
-        BaiduMap.OnMapClickListener mapClickListener = new BaiduMap.OnMapClickListener() {
+        BaiduMap.OnMapClickListener mapClick = new BaiduMap.OnMapClickListener() {
             public void onMapClick(LatLng latLng) {
                 dLocLat = latLng.latitude;
                 dLocLng = latLng.longitude;
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
                 //预先设置覆盖物名称
-                mrkTitle = Integer.toString(getMaxMarkerId());
+                gMrkTitle = Integer.toString(getMaxMarkerId());
             }
 
             public boolean onMapPoiClick(MapPoi mapPoi) {
@@ -242,7 +232,7 @@ public class MonitorLbs extends Activity {
         };
 
         //地图缩放后，显示或清除覆盖物
-        BaiduMap.OnMapStatusChangeListener mapStatusChangeListener = new BaiduMap.OnMapStatusChangeListener() {
+        BaiduMap.OnMapStatusChangeListener mapStatusChange = new BaiduMap.OnMapStatusChangeListener() {
             public void onMapStatusChangeStart(MapStatus mapStatus) {
 
             }
@@ -250,11 +240,8 @@ public class MonitorLbs extends Activity {
             public void onMapStatusChange(MapStatus mapStatus) {
                 float zoomLvl = mapStatus.zoom;
                 if(zoomLvl <= mapMarkShwoZoomlvl){
-                    mBaiduMap.clear();
-                    //showAllMarker();
+                    gBaiduMap.clear();
                 }else{
-                    //mBaiduMap.clear();
-                    //isMarkShowAll = false;
                 }
             }
 
@@ -263,7 +250,7 @@ public class MonitorLbs extends Activity {
             }
         };
         //拖曳覆盖物，重新获取GPS位置
-        BaiduMap.OnMarkerDragListener mrkDragListener = new BaiduMap.OnMarkerDragListener() {
+        BaiduMap.OnMarkerDragListener mrkDrag = new BaiduMap.OnMarkerDragListener() {
             public void onMarkerDrag(Marker marker) {
 
             }
@@ -280,35 +267,35 @@ public class MonitorLbs extends Activity {
             }
         };
         //点击覆盖物，显示名称及是否进行修改
-        BaiduMap.OnMarkerClickListener mrkClickListener = new BaiduMap.OnMarkerClickListener(){
+        BaiduMap.OnMarkerClickListener mrkClick = new BaiduMap.OnMarkerClickListener(){
             public boolean onMarkerClick(Marker marker){
                 Log.d("mrkClick", "Title is:" + marker.getTitle());
                 Log.d("mrkClick", "Lat is:" + marker.getPosition().latitude + ";Lon is:" + marker.getPosition().longitude);
                 Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
-                intent.putExtra("mrkTitle", marker.getTitle());
+                intent.putExtra("gMrkTitle", marker.getTitle());
                 startActivity(intent);
                 return true;
             }
         };
-        mBaiduMap.setOnMapClickListener(mapClickListener);
-        mBaiduMap.setOnMarkerDragListener(mrkDragListener);
-        mBaiduMap.setOnMapStatusChangeListener(mapStatusChangeListener);
-        mBaiduMap.setOnMarkerClickListener(mrkClickListener);
+        gBaiduMap.setOnMapClickListener(mapClick);
+        gBaiduMap.setOnMarkerDragListener(mrkDrag);
+        gBaiduMap.setOnMapStatusChangeListener(mapStatusChange);
+        gBaiduMap.setOnMarkerClickListener(mrkClick);
 
         // 开启定位图层
-        mBaiduMap.setMyLocationEnabled(true);
-        mBaiduMap
+        gBaiduMap.setMyLocationEnabled(true);
+        gBaiduMap
                 .setMyLocationConfigeration(new MyLocationConfiguration(
-                        mCurrentMode, true, mCurrentMarker));
+                        gCurrentMode, true, gMrkBitmapDesc));
         // 定位初始化
-        mLocClient = new LocationClient(this);
-        mLocClient.registerLocationListener(myListener);
+        gLocClient = new LocationClient(this);
+        gLocClient.registerLocationListener(gMyLocListener);
         LocationClientOption option = new LocationClientOption();
         option.setOpenGps(true); // 打开gps
         option.setCoorType("bd09ll"); // 设置坐标类型
         option.setScanSpan(1000);//1秒刷新一次
-        mLocClient.setLocOption(option);
-        mLocClient.start();
+        gLocClient.setLocOption(option);
+        gLocClient.start();
     }
 
     /**
@@ -317,7 +304,7 @@ public class MonitorLbs extends Activity {
     public class MyLocationListenner implements BDLocationListener {
         public void onReceiveLocation(BDLocation location) {
             // map view 销毁后不在处理新接收的位置
-            if (location == null || mMapView == null) {
+            if (location == null || gMapView == null) {
                 return;
             }
             MyLocationData locData = new MyLocationData.Builder()
@@ -325,14 +312,14 @@ public class MonitorLbs extends Activity {
                             // 此处设置开发者获取到的方向信息，顺时针0-360
                     .direction(location.getDirection()).latitude(location.getLatitude())
                     .longitude(location.getLongitude()).build();
-            mBaiduMap.setMyLocationData(locData);
+            gBaiduMap.setMyLocationData(locData);
             if (isFirstLoc) {
                 isFirstLoc = false;
                 LatLng ll = new LatLng(location.getLatitude(),
                         location.getLongitude());
                 MapStatus.Builder builder = new MapStatus.Builder();
                 builder.target(ll).zoom(mapZoomLevel);
-                mBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
+                gBaiduMap.animateMapStatus(MapStatusUpdateFactory.newMapStatus(builder.build()));
                 dLocLat = location.getLatitude();
                 dLocLng = location.getLongitude();
                 tvLatLng.setText("lat:" + dLocLat + ";lng:" + dLocLng);
@@ -344,28 +331,28 @@ public class MonitorLbs extends Activity {
     }
 
     protected void onPause() {
-        mMapView.onPause();
+        gMapView.onPause();
         super.onPause();
     }
 
     protected void onResume() {
-        mMapView.onResume();
+        gMapView.onResume();
         super.onResume();
     }
 
     protected void onDestroy() {
         // 退出时销毁定位
-        mLocClient.stop();
+        gLocClient.stop();
         // 关闭定位图层
-        mBaiduMap.setMyLocationEnabled(false);
-        mMapView.onDestroy();
-        mMapView = null;
+        gBaiduMap.setMyLocationEnabled(false);
+        gMapView.onDestroy();
+        gMapView = null;
         super.onDestroy();
     }
 
     protected void addMarker(String title, LatLng point, BitmapDescriptor bitmap){
         OverlayOptions options = new MarkerOptions().icon(bitmap).title(title).position(point).draggable(true);
-        mBaiduMap.addOverlay(options);
+        gBaiduMap.addOverlay(options);
     }
 
     protected void addMarker(String title, LatLng point, int monitor_type, int monitor_angle){
@@ -436,9 +423,9 @@ public class MonitorLbs extends Activity {
     }
 
     protected int getMaxMarkerId(){
-        int id = 1;
+        int id = 1;//当数据库初始化没有记录时id为1
         String sql = "select * from mzMonitor order by _id desc limit 1";
-        Cursor cu = mDatabase.rawQuery(sql, null);
+        Cursor cu = gDatabase.rawQuery(sql, null);
         while(cu.moveToNext()){
             id = cu.getInt(0) + 1;
         }
@@ -449,7 +436,7 @@ public class MonitorLbs extends Activity {
 
     protected void showAllMarker(){
         String sql = "select * from mzMonitor order by _id";
-        Cursor cu = mDatabase.rawQuery(sql, null);
+        Cursor cu = gDatabase.rawQuery(sql, null);
         while(cu.moveToNext()){
             int id = cu.getInt(0);
             String title = cu.getString(1);

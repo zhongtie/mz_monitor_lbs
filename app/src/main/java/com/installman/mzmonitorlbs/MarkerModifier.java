@@ -13,27 +13,24 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
 
-import com.baidu.mapapi.map.BitmapDescriptor;
-
 /**
  * Created by zhong on 16-3-21.
  */
 
 public class MarkerModifier extends Activity {
     //覆盖物相关
-    protected BitmapDescriptor mCurrentMarker;
-    protected int mrkAngle = 0;//默认的覆盖物方向
-    protected String mrkTitle, oldMrkTitle;
-    protected MzMonitor.eMonitorType mMonitorType;
+    protected int gMrkAngle = 0;//默认的覆盖物方向
+    protected String gNewMrkTitle, gOldMrkTitle;
+    protected MzMonitor.eMonitorType gMonitorType;
 
     //数据库存储相关
-    DatabaseHelper mDbHelper;
-    SQLiteDatabase mDatabase;
+    DatabaseHelper gDbHelper;
+    SQLiteDatabase gDatabase;
 
     //UI相关
-    RadioGroup mRadioGroupType, mRadioGroupAngle;
-    EditText mEditText;
-    Button mButtonOk, mButtonCancel;
+    RadioGroup gRadioGroupType, gRadioGroupAngle;
+    EditText gEtMrkTitle;
+    Button gBtnOk, gBtnCancel;
 
     public void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
@@ -51,87 +48,87 @@ public class MarkerModifier extends Activity {
         getWindow().setAttributes(p);
 
         //获取activity传过来的参数
-        Intent intentGet = getIntent();
-        oldMrkTitle = intentGet.getStringExtra("mrkTitle");
+        Intent i = getIntent();
+        gOldMrkTitle = i.getStringExtra("gMrkTitle");
 
         //设置类型
-        mRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
-        mRadioGroupType.check(R.id.radioButtonBall);
-        RadioGroup.OnCheckedChangeListener radioGroupCheckListener = new RadioGroup.OnCheckedChangeListener() {
+        gRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
+        gRadioGroupType.check(R.id.radioButtonBall);
+        RadioGroup.OnCheckedChangeListener rgCheck = new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId){
                     case R.id.radioButtonBall:
-                        mMonitorType = MzMonitor.eMonitorType.BALL;
+                        gMonitorType = MzMonitor.eMonitorType.BALL;
                         break;
                     case R.id.radioButtonGun:
-                        mMonitorType = MzMonitor.eMonitorType.GUN;
+                        gMonitorType = MzMonitor.eMonitorType.GUN;
                         break;
                     case R.id.radioButtonSmart:
-                        mMonitorType = MzMonitor.eMonitorType.SMART;
+                        gMonitorType = MzMonitor.eMonitorType.SMART;
                         break;
                     default:
-                        mMonitorType = MzMonitor.eMonitorType.BALL;
+                        gMonitorType = MzMonitor.eMonitorType.BALL;
                         break;
                 }
             }
         };
-        mRadioGroupType.setOnCheckedChangeListener(radioGroupCheckListener);
+        gRadioGroupType.setOnCheckedChangeListener(rgCheck);
 
         //设置名称
-        mEditText = (EditText) findViewById(R.id.editText_modi_name);
-        mEditText.setText(oldMrkTitle);
+        gEtMrkTitle = (EditText) findViewById(R.id.editText_modi_name);
+        gEtMrkTitle.setText(gOldMrkTitle);
 
         //设置角度，初始角度都是0
-        mRadioGroupAngle = (RadioGroup) findViewById(R.id.radioGroupAngle);
-        mRadioGroupAngle.check(R.id.radioButtonUp);
-        RadioGroup.OnCheckedChangeListener angleChangeListener = new RadioGroup.OnCheckedChangeListener() {
+        gRadioGroupAngle = (RadioGroup) findViewById(R.id.radioGroupAngle);
+        gRadioGroupAngle.check(R.id.radioButtonUp);
+        RadioGroup.OnCheckedChangeListener angleChange = new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId){
                     case R.id.radioButtonUp:
-                        mrkAngle = 0;
+                        gMrkAngle = 0;
                         break;
                     case R.id.radioButtonRight:
-                        mrkAngle = 90;
+                        gMrkAngle = 90;
                         break;
                     case R.id.radioButtonDown:
-                        mrkAngle = 180;
+                        gMrkAngle = 180;
                         break;
                     case R.id.radioButtonLeft:
-                        mrkAngle = 270;
+                        gMrkAngle = 270;
                         break;
                     default:
-                        mrkAngle = 0;
+                        gMrkAngle = 0;
                         break;
                 }
             }
         };
-        mRadioGroupAngle.setOnCheckedChangeListener(angleChangeListener);
+        gRadioGroupAngle.setOnCheckedChangeListener(angleChange);
 
         //确认修改
         //后台数据库sqlite存储
-        mDbHelper = new DatabaseHelper(this);
-        mDatabase = mDbHelper.getWritableDatabase();
+        gDbHelper = new DatabaseHelper(this);
+        gDatabase = gDbHelper.getWritableDatabase();
 
-        mButtonOk = (Button) findViewById(R.id.button_modi_ok);
-        View.OnClickListener okClickListener = new View.OnClickListener() {
+        gBtnOk = (Button) findViewById(R.id.button_modi_ok);
+        View.OnClickListener btnOkClick = new View.OnClickListener() {
             public void onClick(View v) {
-                mrkTitle = mEditText.getText().toString();
-                mDatabase.execSQL("update mzMonitor set title = ?, monitor_type = ?, monitor_angle = ?" +
+                gNewMrkTitle = gEtMrkTitle.getText().toString();
+                gDatabase.execSQL("update mzMonitor set title = ?, monitor_type = ?, monitor_angle = ?" +
                                 " where title = ?",
-                        new Object[]{mrkTitle, mMonitorType.ordinal(), mrkAngle, oldMrkTitle});
+                        new Object[]{gNewMrkTitle, gMonitorType.ordinal(), gMrkAngle, gOldMrkTitle});
                 finish();
             }
         };
-        mButtonOk.setOnClickListener(okClickListener);
+        gBtnOk.setOnClickListener(btnOkClick);
 
         //取消返回
-        mButtonCancel = (Button) findViewById(R.id.button_modi_cancel);
-        View.OnClickListener cancelClickListener = new View.OnClickListener() {
+        gBtnCancel = (Button) findViewById(R.id.button_modi_cancel);
+        View.OnClickListener btnCancelClick = new View.OnClickListener() {
             public void onClick(View v) {
                 finish();
             }
         };
-        mButtonCancel.setOnClickListener(cancelClickListener);
+        gBtnCancel.setOnClickListener(btnCancelClick);
     }
 
     protected void onPause(){
