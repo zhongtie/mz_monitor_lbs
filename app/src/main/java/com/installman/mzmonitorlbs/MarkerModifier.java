@@ -2,6 +2,7 @@ package com.installman.mzmonitorlbs;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
@@ -12,6 +13,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioGroup;
+import android.widget.Toast;
 
 /**
  * Created by zhong on 16-3-21.
@@ -20,8 +22,16 @@ import android.widget.RadioGroup;
 public class MarkerModifier extends Activity {
     //覆盖物相关
     protected int gMrkAngle = 0;//默认的覆盖物方向
-    protected String gNewMrkTitle, gOldMrkTitle;
+    protected String gNewMrkTitle, gOldMrkTitle, gAction;
     protected MzMonitor.eMonitorType gMonitorType;
+
+    double gLocLat, gLocLng;
+    protected final String EXTRA_ACTION = "ACTION";
+    protected final String EXTRA_ACTION_ADD = "ADD";
+    protected final String EXTRA_ACTION_MODIFY = "MODIFY";
+    protected final String EXTRA_TITLE = "MRK_TITLE";
+    protected final String EXTRA_LATITUDE = "MRK_LATITUDE";
+    protected final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
 
     //数据库存储相关
     DatabaseHelper gDbHelper;
@@ -41,15 +51,19 @@ public class MarkerModifier extends Activity {
         WindowManager m = getWindowManager();
         Display d = m.getDefaultDisplay();  //为获取屏幕宽、高
         WindowManager.LayoutParams p = getWindow().getAttributes();  //获取对话框当前的参数值
-        p.height = (int) (d.getHeight() * 0.5);   //高度设置为屏幕的1.0
-        p.width = (int) (d.getWidth() * 0.8);    //宽度设置为屏幕的0.8
+        p.height = (int) (d.getHeight() * 0.5);   //高度设置为屏幕的比例
+        p.width = (int) (d.getWidth() * 0.9);    //宽度设置为屏幕的比例
         p.alpha = 0.7f;      //设置本身透明度
         p.dimAmount = 0.0f;      //设置黑暗度
         getWindow().setAttributes(p);
 
         //获取activity传过来的参数
         Intent i = getIntent();
-        gOldMrkTitle = i.getStringExtra("gMrkTitle");
+
+        gAction = i.getStringExtra(EXTRA_ACTION);
+        gOldMrkTitle = i.getStringExtra(EXTRA_TITLE);
+        gLocLat = i.getDoubleExtra(EXTRA_LATITUDE, 0.0);
+        gLocLng = i.getDoubleExtra(EXTRA_LONGTITUDE, 0.0);
 
         //设置类型
         gRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
@@ -113,10 +127,43 @@ public class MarkerModifier extends Activity {
         View.OnClickListener btnOkClick = new View.OnClickListener() {
             public void onClick(View v) {
                 gNewMrkTitle = gEtMrkTitle.getText().toString();
-                gDatabase.execSQL("update mzMonitor set title = ?, monitor_type = ?, monitor_angle = ?" +
-                                " where title = ?",
-                        new Object[]{gNewMrkTitle, gMonitorType.ordinal(), gMrkAngle, gOldMrkTitle});
-                finish();
+                if(isMrkTitleUnique(gNewMrkTitle)) {
+                    switch (gAction) {
+                        case EXTRA_ACTION_MODIFY:
+                            gNewMrkTitle = gEtMrkTitle.getText().toString();
+                            gDatabase.execSQL("update mzMonitor" +
+                                            " set title = ?," +
+                                            " monitor_type = ?," +
+                                            " monitor_angle = ?," +
+                                            " latitude = ?," +
+                                            " longitude = ?" +
+                                            " where title = ?",
+                                    new Object[]{gNewMrkTitle,
+                                            gMonitorType.ordinal(),
+                                            gMrkAngle,
+                                            gLocLat,
+                                            gLocLng,
+                                            gOldMrkTitle});
+                            finish();
+                        case EXTRA_ACTION_ADD:
+                            gDatabase.execSQL("insert into mzMonitor(" +
+                                            " title," +
+                                            " latitude," +
+                                            " longitude," +
+                                            " monitor_type," +
+                                            " monitor_angle)" +
+                                            " values(?,?,?,?,?)",
+                                    new Object[]{gNewMrkTitle,
+                                            gLocLat,
+                                            gLocLng,
+                                            gMonitorType.ordinal(),
+                                            gMrkAngle});
+                            finish();
+                    }
+                }
+                else{
+                    Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT);
+                }
             }
         };
         gBtnOk.setOnClickListener(btnOkClick);
@@ -145,5 +192,16 @@ public class MarkerModifier extends Activity {
 
     protected void onResume() {
         super.onResume();
+    }
+
+    protected boolean isMrkTitleUnique(String title){
+        boolean e = true;
+        String sql = "select title from mzMonitor where title = '" + title + "' limit 1";
+        Cursor cu = gDatabase.rawQuery(sql, null);
+        while(cu.moveToNext()){
+            e = false;
+        }
+        cu.close();
+        return e;
     }
 }

@@ -49,6 +49,12 @@ public class MonitorLbs extends Activity {
     protected double dLocLat, dLocLng;
     protected String strLocAddr;
     protected MzMonitor.eMonitorType gMonitorType;
+    protected final String EXTRA_ACTION = "ACTION";
+    protected final String EXTRA_ACTION_ADD = "ADD";
+    protected final String EXTRA_ACTION_MODIFY = "MODIFY";
+    protected final String EXTRA_TITLE = "MRK_TITLE";
+    protected final String EXTRA_LATITUDE = "MRK_LATITUDE";
+    protected final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
 
     //存储相关
     protected DatabaseHelper gDbHelper;
@@ -61,8 +67,6 @@ public class MonitorLbs extends Activity {
     // UI相关
     Button buttonLocMod;
     Button buttonSetLoc;
-    PopupMenu popupMenuSetLoc;
-    Menu menuSetLoc;
     Button buttonClearLoc;
     Button buttonSaveLoc;
     Button buttonRequestLoc;
@@ -120,6 +124,14 @@ public class MonitorLbs extends Activity {
 
         OnClickListener btnMrkClick = new OnClickListener() {
             public void onClick(View v) {
+                Intent i = new Intent(MonitorLbs.this, MarkerModifier.class);
+                i.putExtra(EXTRA_ACTION, EXTRA_ACTION_ADD);
+                i.putExtra(EXTRA_TITLE, "梅江区");
+                i.putExtra(EXTRA_LATITUDE, dLocLat);
+                i.putExtra(EXTRA_LONGTITUDE, dLocLng);
+                startActivity(i);
+                finish();
+                /*
                 popupMenuSetLoc = new PopupMenu(MonitorLbs.this, findViewById(R.id.buttonSet));
                 menuSetLoc = popupMenuSetLoc.getMenu();
                 menuSetLoc.add(Menu.NONE, Menu.FIRST + 0, 0, "动球");
@@ -149,6 +161,7 @@ public class MonitorLbs extends Activity {
                     }
                 };
                 popupMenuSetLoc.setOnMenuItemClickListener(clOnMenuItemClick);
+                */
             }
         };
         buttonSetLoc.setOnClickListener(btnMrkClick);
@@ -168,10 +181,12 @@ public class MonitorLbs extends Activity {
         buttonSaveLoc.setText("保存");
         OnClickListener btnSaveClick = new OnClickListener() {
             public void onClick(View v) {
+                /*
                 gMrkTitle = Integer.toString(getMaxMarkerId());
                 gDatabase.execSQL("insert into mzMonitor(title, latitude, longitude, monitor_type, monitor_angle) " +
                                 "values(?,?,?,?,?)",
                         new Object[]{gMrkTitle, dLocLat, dLocLng, gMonitorType.ordinal(), gMrkAngle});
+                        */
             }
         };
         buttonSaveLoc.setOnClickListener(btnSaveClick);
@@ -272,7 +287,10 @@ public class MonitorLbs extends Activity {
                 Log.d("mrkClick", "Title is:" + marker.getTitle());
                 Log.d("mrkClick", "Lat is:" + marker.getPosition().latitude + ";Lon is:" + marker.getPosition().longitude);
                 Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
-                intent.putExtra("gMrkTitle", marker.getTitle());
+                intent.putExtra(EXTRA_ACTION, EXTRA_ACTION_MODIFY);
+                intent.putExtra(EXTRA_TITLE, marker.getTitle());
+                intent.putExtra(EXTRA_LATITUDE, marker.getPosition().latitude);
+                intent.putExtra(EXTRA_LONGTITUDE, marker.getPosition().longitude);
                 startActivity(intent);
                 return true;
             }
