@@ -22,6 +22,7 @@ import android.widget.Toast;
 public class MarkerModifier extends Activity {
     //覆盖物相关
     protected int gMrkAngle = 0;//默认的覆盖物方向
+    protected int gMrkType = 0;
     protected String gNewMrkTitle, gOldMrkTitle, gAction;
     protected MzMonitor.eMonitorType gMonitorType = MzMonitor.eMonitorType.BALL;
 
@@ -51,11 +52,17 @@ public class MarkerModifier extends Activity {
         p.dimAmount = 0.0f;      //设置黑暗度
         getWindow().setAttributes(p);
 
+        //确认修改
+        //后台数据库sqlite存储
+        gDbHelper = new DatabaseHelper(this);
+        gDatabase = gDbHelper.getWritableDatabase();
+
         //获取activity传过来的参数
         Intent i = getIntent();
-
         gAction = i.getStringExtra(MonitorLbs.EXTRA_ACTION);
         gOldMrkTitle = i.getStringExtra(MonitorLbs.EXTRA_TITLE);
+        gMrkType = i.getIntExtra(MonitorLbs.EXTRA_TYPE, 0);
+        gMrkAngle = i.getIntExtra(MonitorLbs.EXTRA_ANGLE, 0);
         gLocLat = i.getDoubleExtra(MonitorLbs.EXTRA_LATITUDE, 0.0);
         gLocLng = i.getDoubleExtra(MonitorLbs.EXTRA_LONGTITUDE, 0.0);
 
@@ -65,7 +72,17 @@ public class MarkerModifier extends Activity {
 
         //设置类型
         gRadioGroupType = (RadioGroup) findViewById(R.id.radioGroupType);
-        gRadioGroupType.check(R.id.radioButtonBall);
+        if(gMrkType == MzMonitor.eMonitorType.BALL.ordinal()){
+            gRadioGroupType.check(R.id.radioButtonBall);
+            gMonitorType = MzMonitor.eMonitorType.BALL;
+        }else if(gMrkType == MzMonitor.eMonitorType.GUN.ordinal()){
+            gRadioGroupType.check(R.id.radioButtonGun);
+            gMonitorType = MzMonitor.eMonitorType.GUN;
+        }else if(gMrkType == MzMonitor.eMonitorType.SMART.ordinal()){
+            gRadioGroupType.check(R.id.radioButtonSmart);
+            gMonitorType = MzMonitor.eMonitorType.SMART;
+        }
+
         RadioGroup.OnCheckedChangeListener rgCheck = new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId){
@@ -88,7 +105,16 @@ public class MarkerModifier extends Activity {
 
         //设置角度，初始角度都是0
         gRadioGroupAngle = (RadioGroup) findViewById(R.id.radioGroupAngle);
-        gRadioGroupAngle.check(R.id.radioButtonUp);
+        if(gMrkAngle == 0){
+            gRadioGroupAngle.check(R.id.radioButtonUp);
+        }else if(gMrkAngle == 90){
+            gRadioGroupAngle.check(R.id.radioButtonRight);
+        }else if(gMrkAngle == 180){
+            gRadioGroupAngle.check(R.id.radioButtonDown);
+        }else if(gMrkAngle == 270){
+            gRadioGroupAngle.check(R.id.radioButtonLeft);
+        }
+
         RadioGroup.OnCheckedChangeListener angleChange = new RadioGroup.OnCheckedChangeListener() {
             public void onCheckedChanged(RadioGroup group, int checkedId) {
                 switch (checkedId){
@@ -112,11 +138,6 @@ public class MarkerModifier extends Activity {
         };
         gRadioGroupAngle.setOnCheckedChangeListener(angleChange);
 
-        //确认修改
-        //后台数据库sqlite存储
-        gDbHelper = new DatabaseHelper(this);
-        gDatabase = gDbHelper.getWritableDatabase();
-
         gBtnOk = (Button) findViewById(R.id.button_modi_ok);
         View.OnClickListener btnOkClick = new View.OnClickListener() {
             public void onClick(View v) {
@@ -124,6 +145,53 @@ public class MarkerModifier extends Activity {
                 gNewMrkTitle = gEtMrkTitle.getText().toString();
                 Log.d("Modify", gAction + gNewMrkTitle + gMonitorType.ordinal() + gMrkAngle + gLocLat + gLocLng);
 
+                if(MonitorLbs.EXTRA_ACTION_ADD.equals(gAction)){
+                    if(isMrkTitleUnique(gNewMrkTitle)){
+                        //do new marker
+                        gDatabase.execSQL("insert into mzMonitor(" +
+                                        " title," +
+                                        " latitude," +
+                                        " longitude," +
+                                        " monitor_type," +
+                                        " monitor_angle)" +
+                                        " values(?,?,?,?,?)",
+                                new Object[]{gNewMrkTitle,
+                                        gLocLat,
+                                        gLocLng,
+                                        gMonitorType.ordinal(),
+                                        gMrkAngle});
+                        finish();
+                    }
+                    else{
+                        //hint
+                        Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                else if(MonitorLbs.EXTRA_ACTION_MODIFY.equals(gAction)){
+                    gNewMrkTitle = gEtMrkTitle.getText().toString();
+                    if(gNewMrkTitle.equals(gOldMrkTitle) || isMrkTitleUnique(gNewMrkTitle)){
+                        //do update marker
+                        gDatabase.execSQL("update mzMonitor" +
+                                        " set title = ?," +
+                                        " monitor_type = ?," +
+                                        " monitor_angle = ?," +
+                                        " latitude = ?," +
+                                        " longitude = ?" +
+                                        " where title = ?",
+                                new Object[]{gNewMrkTitle,
+                                        gMonitorType.ordinal(),
+                                        gMrkAngle,
+                                        gLocLat,
+                                        gLocLng,
+                                        gOldMrkTitle});
+                        finish();
+                    }
+                    else{
+                        //hint
+                        Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
+                    }
+                }
+                /*
                 if(isMrkTitleUnique(gNewMrkTitle)) {
                     if(MonitorLbs.EXTRA_ACTION_MODIFY.equals(gAction)) {
                         gNewMrkTitle = gEtMrkTitle.getText().toString();
@@ -160,6 +228,7 @@ public class MarkerModifier extends Activity {
                 else{
                     Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
                 }
+                */
             }
         };
         gBtnOk.setOnClickListener(btnOkClick);
