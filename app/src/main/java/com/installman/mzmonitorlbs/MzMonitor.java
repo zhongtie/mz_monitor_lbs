@@ -10,20 +10,31 @@ public class MzMonitor implements Serializable{
     protected eMonitorType gMonitorType;//监控头类型
     protected int gMrkAngle;//监控头方向
     protected String gMrkTitle;//监控头名称
+    protected String gStation;//所属派出所
     protected double gLocLatitude, gLocLngitude;//监控头所在位置
+
+    public String getStation() {
+        return gStation;
+    }
+
+    public void setStation(String gStation) {
+        this.gStation = gStation;
+    }
 
     public void MzMonitor(){
         gMonitorType = eMonitorType.BALL;
         gMrkAngle = 0;
         gMrkTitle = "广东省梅州市梅江区";
+        gStation = "三角所";
         gLocLatitude = 116.129435;
         gLocLngitude = 24.2941424;
     }
 
-    public void MzMonitor(eMonitorType monitorType, int angle, String title, double latitude, double longitude){
+    public void MzMonitor(eMonitorType monitorType, int angle, String title, String station, double latitude, double longitude){
         gMonitorType = monitorType;
         gMrkAngle = angle;
         gMrkTitle = title;
+        gStation = station;
         gLocLatitude = latitude;
         gLocLngitude = longitude;
     }
