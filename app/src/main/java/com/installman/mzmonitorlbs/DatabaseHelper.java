@@ -23,7 +23,8 @@ class DatabaseHelper extends SQLiteOpenHelper {
                 "latitude DOUBLE NOT NULL," +
                 "longitude DOUBLE NOT NULL," +
                 "monitor_type INT NOT NULL," +
-                "monitor_angle INT NOT NULL" +
+                "monitor_angle INT NOT NULL," +
+                "station TEXT" +
                 ")";
         db.execSQL(sql);
     }

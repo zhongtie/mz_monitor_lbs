@@ -6,12 +6,9 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -52,11 +49,12 @@ public class MonitorLbs extends Activity {
     public static final String EXTRA_ACTION = "ACTION";
     public static final String EXTRA_ACTION_ADD = "ADD";
     public static final String EXTRA_ACTION_MODIFY = "MODIFY";
+    public static final String EXTRA_STATION = "MRK_STATION";
     public static final String EXTRA_TITLE = "MRK_TITLE";
     public static final String EXTRA_TYPE = "MRK_TYPE";
     public static final String EXTRA_ANGLE = "MRK_ANGLE";
     public static final String EXTRA_LATITUDE = "MRK_LATITUDE";
-    public static final String EXTRA_LONGTITUDE = "MRK_LONGITUDE";
+    public static final String EXTRA_LONGITUDE = "MRK_LONGITUDE";
 
     //存储相关
     protected DatabaseHelper gDbHelper;
@@ -129,10 +127,11 @@ public class MonitorLbs extends Activity {
                 Intent i = new Intent(MonitorLbs.this, MarkerModifier.class);
                 i.putExtra(EXTRA_ACTION, EXTRA_ACTION_ADD);
                 i.putExtra(EXTRA_TITLE, "梅江区");
+                i.putExtra(EXTRA_STATION, "三角所");
                 i.putExtra(EXTRA_ANGLE, 0);
                 i.putExtra(EXTRA_TYPE, MzMonitor.eMonitorType.BALL.ordinal());
                 i.putExtra(EXTRA_LATITUDE, dLocLat);
-                i.putExtra(EXTRA_LONGTITUDE, dLocLng);
+                i.putExtra(EXTRA_LONGITUDE, dLocLng);
                 startActivity(i);
                 /*
                 popupMenuSetLoc = new PopupMenu(MonitorLbs.this, findViewById(R.id.buttonSet));
@@ -293,11 +292,12 @@ public class MonitorLbs extends Activity {
                 Intent intent = new Intent(MonitorLbs.this, MarkerInfoSimp.class);
                 intent.putExtra(EXTRA_ACTION, EXTRA_ACTION_MODIFY);
                 intent.putExtra(EXTRA_TITLE, m.getMrkTitle());
+                intent.putExtra(EXTRA_STATION, m.getStation());
                 intent.putExtra(EXTRA_ANGLE, m.getMrkAngle());
                 intent.putExtra(EXTRA_TYPE, m.getMonitorType().ordinal());
                 //如果有移动，需要使用移动后的位置
                 intent.putExtra(EXTRA_LATITUDE, marker.getPosition().latitude);
-                intent.putExtra(EXTRA_LONGTITUDE, marker.getPosition().longitude);
+                intent.putExtra(EXTRA_LONGITUDE, marker.getPosition().longitude);
                 startActivity(intent);
                 return true;
             }
@@ -464,15 +464,12 @@ public class MonitorLbs extends Activity {
         String sql = "select * from mzMonitor where title = '" + title + "' limit 1";
         Cursor cu = gDatabase.rawQuery(sql, null);
         while (cu.moveToNext()){
-            int id = cu.getInt(0);
-            String tle = cu.getString(1);
-            m.setMrkTitle(tle);
-            double lat = cu.getDouble(2);
-            m.setLocLatitude(lat);
-            double lon = cu.getDouble(3);
-            m.setLocLngitude(lon);
-            int monitor_type = cu.getInt(4);
-            switch (monitor_type){
+            //int id = cu.getInt(0);
+            m.setMrkTitle(cu.getString(1));
+            m.setLocLatitude(cu.getDouble(2));
+            m.setLocLngitude(cu.getDouble(3));
+            int mt = cu.getInt(4);
+            switch (mt){
                 case 0:
                     m.setMonitorType(MzMonitor.eMonitorType.BALL);
                     break;
@@ -486,8 +483,8 @@ public class MonitorLbs extends Activity {
                     m.setMonitorType(MzMonitor.eMonitorType.BALL);
                     break;
             }
-            int monitor_angle = cu.getInt(5);
-            m.setMrkAngle(monitor_angle);
+            m.setMrkAngle(cu.getInt(5));
+            m.setStation(cu.getString(6));
         }
         return m;
     }
@@ -496,7 +493,7 @@ public class MonitorLbs extends Activity {
         String sql = "select * from mzMonitor order by _id";
         Cursor cu = gDatabase.rawQuery(sql, null);
         while(cu.moveToNext()){
-            int id = cu.getInt(0);
+            //int id = cu.getInt(0);
             String title = cu.getString(1);
             double lat = cu.getDouble(2);
             double lon = cu.getDouble(3);

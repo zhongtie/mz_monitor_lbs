@@ -13,14 +13,6 @@ public class MzMonitor implements Serializable{
     protected String gStation;//所属派出所
     protected double gLocLatitude, gLocLngitude;//监控头所在位置
 
-    public String getStation() {
-        return gStation;
-    }
-
-    public void setStation(String gStation) {
-        this.gStation = gStation;
-    }
-
     public void MzMonitor(){
         gMonitorType = eMonitorType.BALL;
         gMrkAngle = 0;
@@ -77,5 +69,13 @@ public class MzMonitor implements Serializable{
 
     public void setLocLngitude(double gLocLngitude) {
         this.gLocLngitude = gLocLngitude;
+    }
+
+    public String getStation() {
+        return gStation;
+    }
+
+    public void setStation(String gStation) {
+        this.gStation = gStation;
     }
 }

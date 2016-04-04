@@ -14,7 +14,7 @@ import android.widget.TextView;
  * Created by zhong on 16-3-22.
  */
 public class MarkerInfoSimp extends Activity {
-    String gAction, gMrkTitle;
+    String gAction, gMrkTitle, gStation;
     int gType, gAngle;
     double gLocLat, gLocLng;
 
@@ -35,25 +35,27 @@ public class MarkerInfoSimp extends Activity {
         //接收参数
         Intent intent = getIntent();
         gAction = intent.getStringExtra(MonitorLbs.EXTRA_ACTION);
+        gStation = intent.getStringExtra(MonitorLbs.EXTRA_STATION);
         gMrkTitle = intent.getStringExtra(MonitorLbs.EXTRA_TITLE);
         gType = intent.getIntExtra(MonitorLbs.EXTRA_TYPE, 0);
         gAngle = intent.getIntExtra(MonitorLbs.EXTRA_ANGLE, 0);
         gLocLat = intent.getDoubleExtra(MonitorLbs.EXTRA_LATITUDE, 0.0);
-        gLocLng = intent.getDoubleExtra(MonitorLbs.EXTRA_LONGTITUDE, 0.0);
+        gLocLng = intent.getDoubleExtra(MonitorLbs.EXTRA_LONGITUDE, 0.0);
 
         TextView tvTitle = (TextView) findViewById(R.id.textView_info_name);
-        tvTitle.setText(gMrkTitle);
+        tvTitle.setText("[" + gStation + "]" + gMrkTitle);
 
         Button btnModify = (Button) findViewById(R.id.button_info_modify);
         View.OnClickListener btnModifyClick = new View.OnClickListener() {
             public void onClick(View v) {
                 Intent i = new Intent(MarkerInfoSimp.this, MarkerModifier.class);
                 i.putExtra(MonitorLbs.EXTRA_ACTION, MonitorLbs.EXTRA_ACTION_MODIFY);
+                i.putExtra(MonitorLbs.EXTRA_STATION, gStation);
                 i.putExtra(MonitorLbs.EXTRA_TITLE, gMrkTitle);
                 i.putExtra(MonitorLbs.EXTRA_TYPE, gType);
                 i.putExtra(MonitorLbs.EXTRA_ANGLE, gAngle);
                 i.putExtra(MonitorLbs.EXTRA_LATITUDE, gLocLat);
-                i.putExtra(MonitorLbs.EXTRA_LONGTITUDE, gLocLng);
+                i.putExtra(MonitorLbs.EXTRA_LONGITUDE, gLocLng);
                 startActivity(i);
                 finish();
             }

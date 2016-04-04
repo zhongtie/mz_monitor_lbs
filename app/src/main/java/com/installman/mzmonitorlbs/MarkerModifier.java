@@ -23,7 +23,7 @@ public class MarkerModifier extends Activity {
     //覆盖物相关
     protected int gMrkAngle = 0;//默认的覆盖物方向
     protected int gMrkType = 0;
-    protected String gNewMrkTitle, gOldMrkTitle, gAction;
+    protected String gNewMrkStation, gOldMrkStation, gNewMrkTitle, gOldMrkTitle, gAction;
     protected MzMonitor.eMonitorType gMonitorType = MzMonitor.eMonitorType.BALL;
 
     double gLocLat, gLocLng;
@@ -34,7 +34,7 @@ public class MarkerModifier extends Activity {
 
     //UI相关
     RadioGroup gRadioGroupType, gRadioGroupAngle;
-    EditText gEtMrkTitle;
+    EditText gEtMrkStation, gEtMrkTitle;
     Button gBtnOk, gBtnCancel;
 
     public void onCreate(Bundle savedInstanceState){
@@ -61,10 +61,15 @@ public class MarkerModifier extends Activity {
         Intent i = getIntent();
         gAction = i.getStringExtra(MonitorLbs.EXTRA_ACTION);
         gOldMrkTitle = i.getStringExtra(MonitorLbs.EXTRA_TITLE);
+        gOldMrkStation = i.getStringExtra(MonitorLbs.EXTRA_STATION);
         gMrkType = i.getIntExtra(MonitorLbs.EXTRA_TYPE, 0);
         gMrkAngle = i.getIntExtra(MonitorLbs.EXTRA_ANGLE, 0);
         gLocLat = i.getDoubleExtra(MonitorLbs.EXTRA_LATITUDE, 0.0);
-        gLocLng = i.getDoubleExtra(MonitorLbs.EXTRA_LONGTITUDE, 0.0);
+        gLocLng = i.getDoubleExtra(MonitorLbs.EXTRA_LONGITUDE, 0.0);
+
+        //设置派出所
+        gEtMrkStation = (EditText) findViewById(R.id.editText_modi_station);
+        gEtMrkStation.setText(gOldMrkStation);
 
         //设置名称
         gEtMrkTitle = (EditText) findViewById(R.id.editText_modi_name);
@@ -142,8 +147,9 @@ public class MarkerModifier extends Activity {
         View.OnClickListener btnOkClick = new View.OnClickListener() {
             public void onClick(View v) {
                 //显示相关参数
+                gNewMrkStation = gEtMrkStation.getText().toString();
                 gNewMrkTitle = gEtMrkTitle.getText().toString();
-                Log.d("Modify", gAction + gNewMrkTitle + gMonitorType.ordinal() + gMrkAngle + gLocLat + gLocLng);
+                //Log.d("Modify", gAction + gNewMrkTitle + gMonitorType.ordinal() + gMrkAngle + gLocLat + gLocLng);
 
                 if(MonitorLbs.EXTRA_ACTION_ADD.equals(gAction)){
                     if(isMrkTitleUnique(gNewMrkTitle)){
@@ -153,13 +159,15 @@ public class MarkerModifier extends Activity {
                                         " latitude," +
                                         " longitude," +
                                         " monitor_type," +
-                                        " monitor_angle)" +
-                                        " values(?,?,?,?,?)",
+                                        " monitor_angle," +
+                                        " station)" +
+                                        " values(?,?,?,?,?,?)",
                                 new Object[]{gNewMrkTitle,
                                         gLocLat,
                                         gLocLng,
                                         gMonitorType.ordinal(),
-                                        gMrkAngle});
+                                        gMrkAngle,
+                                        gNewMrkStation});
                         finish();
                     }
                     else{
@@ -176,13 +184,15 @@ public class MarkerModifier extends Activity {
                                         " monitor_type = ?," +
                                         " monitor_angle = ?," +
                                         " latitude = ?," +
-                                        " longitude = ?" +
+                                        " longitude = ?," +
+                                        " station = ?" +
                                         " where title = ?",
                                 new Object[]{gNewMrkTitle,
                                         gMonitorType.ordinal(),
                                         gMrkAngle,
                                         gLocLat,
                                         gLocLng,
+                                        gNewMrkStation,
                                         gOldMrkTitle});
                         finish();
                     }
@@ -191,44 +201,6 @@ public class MarkerModifier extends Activity {
                         Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
                     }
                 }
-                /*
-                if(isMrkTitleUnique(gNewMrkTitle)) {
-                    if(MonitorLbs.EXTRA_ACTION_MODIFY.equals(gAction)) {
-                        gNewMrkTitle = gEtMrkTitle.getText().toString();
-                        gDatabase.execSQL("update mzMonitor" +
-                                        " set title = ?," +
-                                        " monitor_type = ?," +
-                                        " monitor_angle = ?," +
-                                        " latitude = ?," +
-                                        " longitude = ?" +
-                                        " where title = ?",
-                                new Object[]{gNewMrkTitle,
-                                        gMonitorType.ordinal(),
-                                        gMrkAngle,
-                                        gLocLat,
-                                        gLocLng,
-                                        gOldMrkTitle});
-                    }
-                    else if(MonitorLbs.EXTRA_ACTION_ADD.equals(gAction)){
-                            gDatabase.execSQL("insert into mzMonitor(" +
-                                            " title," +
-                                            " latitude," +
-                                            " longitude," +
-                                            " monitor_type," +
-                                            " monitor_angle)" +
-                                            " values(?,?,?,?,?)",
-                                    new Object[]{gNewMrkTitle,
-                                            gLocLat,
-                                            gLocLng,
-                                            gMonitorType.ordinal(),
-                                            gMrkAngle});
-                    }
-                    finish();
-                }
-                else{
-                    Toast.makeText(getApplicationContext(), "名称重复，请修改后提交", Toast.LENGTH_SHORT).show();
-                }
-                */
             }
         };
         gBtnOk.setOnClickListener(btnOkClick);
